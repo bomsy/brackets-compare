@@ -1,4 +1,4 @@
 brackets-jsIntellisense
 =======================
 
-jsIntellisence extension for brackets
+Compare two files in brackets with detailed information about differences.
