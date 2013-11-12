@@ -4,31 +4,75 @@
 /** Simple extension that adds a "File > Hello World" menu item. Inserts "Hello, world!" at cursor pos. */
 define(function (require, exports, module) {
     "use strict";
-    var PanelManager    = brackets.getModule("view/PanelManager"),
-        CommandManager  = brackets.getModule("command/CommandManager"),
-        EditorManager   = brackets.getModule("editor/EditorManager"),
-        Menus           = brackets.getModule("command/Menus"),
-        DocumentManager = brackets.getModule("document/DocumentManager");
-
+    var PanelManager        = brackets.getModule("view/PanelManager"),
+        CommandManager      = brackets.getModule("command/CommandManager"),
+        EditorManager       = brackets.getModule("editor/EditorManager"),
+        Menus               = brackets.getModule("command/Menus"),
+        DocumentManager     = brackets.getModule("document/DocumentManager"),
+        ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
+        AppInit             = brackets.getModule("utils/AppInit"),
+        NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
+        FileUtils           = brackets.getModule("file/FileUtils");
     
-    // Function to run when the menu item is clicked
-    function initialize() {
-        var editor = DocumentManager.getCurrentDocument();
-        var panel = PanelManager.createBottomPanel("compare.comparefile", $("<div id='compare-panel' class='bottom-panel'><textarea id='compare-code'></textarea></div>"), 100);
-        if (editor) {
-            CodeMirror.fromTextArea(document.querySelector("#compare-code"), {
-                mode: "javascript",
-                lineNumbers: true
-            });
-            $("#compare-code").text("function test(){ return true; }");
-            panel.show();
-        }
+    var comparePanel  = null,
+        textArea      = null,
+        compareEditor = null,
+        compareHeader = null,
+        contentModes = {
+            html: "text/html",
+            css : "css",
+            js  : "javascript"
+        },
+        markup = "<div class='brackets-compare'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' class='bottom-panel'></textarea></div>";
+    
+    AppInit.htmlReady(function () {
+        // Load stylesheet
+        ExtensionUtils.loadStyleSheet(module, "compare.css");
+        
+        comparePanel = PanelManager.createBottomPanel("compare.comparefile", $(markup), 1000);
+        textArea = document.querySelector("#compare-textarea");
+        compareHeader = $("#compare-header");
+    });
+
+    function loadCodeMirror(contentArea, contentMode){
+        return CodeMirror.fromTextArea(contentArea, { 
+            mode: contentMode, 
+            lineNumbers: true,
+            lineWrapping: true
+        });
     }
     
+    function reloadCodeMirror(contentArea, contentMode){
+        if(compareEditor){
+            compareEditor.toTextArea();
+        }
+        return loadCodeMirror(contentArea, contentMode);
+    }
+    
+    function loadCompareFile(){
+        NativeFileSystem.showOpenDialog( false, false, "Choose a file...", " ", null, 
+            function(data){
+                var filepath = data[0];
+                compareEditor = reloadCodeMirror(textArea, contentModes[FileUtils.getFileExtension(filepath)]);
+                FileUtils.readAsText(new NativeFileSystem.FileEntry(filepath))
+                    .then(function(textContent){
+                        console.log(textContent);
+                        if(comparePanel && compareEditor){
+                            comparePanel.show();
+                            compareHeader.text( " brackets-compare : " + filepath + " ");
+                            compareEditor.setValue(textContent);
+                        }
+                    }, function(err){
+                        console.log(err);
+                    });
+            }, function(err){
+                console.log(err);
+            });
+    }
     
     // First, register a command - a UI-less object associating an id to a handler
-    var COMPARE_COMMAND_ID = "compare.start";   // package-style naming to avoid collisions
-    CommandManager.register("Compare with selected file ", COMPARE_COMMAND_ID, initialize);
+    var COMPARE_COMMAND_ID = "compare.openFileDialog";   // package-style naming to avoid collisions
+    CommandManager.register("Compare with... ", COMPARE_COMMAND_ID, loadCompareFile);
 
     // Then create a menu item bound to the command
     // The label of the menu item is the name we gave the command (see above)
@@ -40,6 +84,14 @@ define(function (require, exports, module) {
     
     workingSetCnxtMenu.addMenuDivider();
     workingSetCnxtMenu.addMenuItem(COMPARE_COMMAND_ID);
-
-    exports.initialize = initialize;
+    
+    exports.loadCompareFile = loadCompareFile;
 });
+
+
+
+
+
+
+
+
