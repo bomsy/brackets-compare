@@ -1,4 +1,16 @@
-.brackets-compare .title {
+#brackets-compare {
+    min-height: 50%;
+    border-top: 1px solid #ddd;
+}
+#brackets-compare #compare-header {
     padding: 6px;
-    height: 10px;
+    height: 16px;
+}
+
+.present {
+    background-color: #99FFCC;
+}
+.absent {
+    background-color: #FF99CC;
+    border-radius: 3px;
 }

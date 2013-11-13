@@ -23,7 +23,7 @@ define(function (require, exports, module) {
             css : "css",
             js  : "javascript"
         },
-        markup = "<div class='brackets-compare'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' class='bottom-panel'></textarea></div>";
+        markup = "<div id='brackets-compare' class='brackets-compare bottom-panel'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' ></textarea></div>";
     
     AppInit.htmlReady(function () {
         // Load stylesheet
@@ -32,6 +32,9 @@ define(function (require, exports, module) {
         comparePanel = PanelManager.createBottomPanel("compare.comparefile", $(markup), 1000);
         textArea = document.querySelector("#compare-textarea");
         compareHeader = $("#compare-header");
+        $(DocumentManager).on("currentDocumentChange", function(){
+            comparePanel.hide();
+        });
     });
 
     function loadCodeMirror(contentArea, contentMode){
@@ -46,21 +49,24 @@ define(function (require, exports, module) {
         if(compareEditor){
             compareEditor.toTextArea();
         }
-        return loadCodeMirror(contentArea, contentMode);
+        compareEditor = loadCodeMirror(contentArea, contentMode);
+        compareEditor.setSize(null, "97.55%");
     }
     
     function loadCompareFile(){
         NativeFileSystem.showOpenDialog( false, false, "Choose a file...", " ", null, 
             function(data){
                 var filepath = data[0];
-                compareEditor = reloadCodeMirror(textArea, contentModes[FileUtils.getFileExtension(filepath)]);
+                reloadCodeMirror(textArea, contentModes[FileUtils.getFileExtension(filepath)]);
                 FileUtils.readAsText(new NativeFileSystem.FileEntry(filepath))
                     .then(function(textContent){
-                        console.log(textContent);
                         if(comparePanel && compareEditor){
                             comparePanel.show();
                             compareHeader.text( " brackets-compare : " + filepath + " ");
                             compareEditor.setValue(textContent);
+                            compareEditor.markText({line: 32, ch: 10},{ line: 32, ch: 20}, {
+                                className: "present"
+                            });
                         }
                     }, function(err){
                         console.log(err);
