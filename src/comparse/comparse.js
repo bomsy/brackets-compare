@@ -1,3 +1,17 @@
+// Structure of the change object
+/* {
+        value: '',
+        start: {
+            line: [1-n],
+            pos:  [0-n]
+        },
+        end: {
+            line: [1-n],
+            pos:  [0-n]
+        },
+        change: 'removed'|'added'|'replaced'
+    }
+*/
 (function(root, mdl){
     // CommonJS
     if(typeof exports === "object" && typeof module === "object"){
@@ -18,18 +32,20 @@
             detail: true,
         },
         states: {
-            present: "present",
-            absent: "absent",
-            diff: "different"
+            ra: "removed_added",
+            r: "removed",
+            a: "added"
         },
         currLine = 1,
         currPos = -1,
-        diff = [], //array of difference objects
-        _c1,
-        _c2;
+        changes = [], //array of difference objects
+        _c1 = null,
+        _c2 = null;
     
-    function getToken(){
-        
+    var newLine = "\n";
+    
+    function moveNext(){
+        currLine
     }
     function isNewLine(ch){
         return ch === "\n";
@@ -41,7 +57,7 @@
     function peek(c){
         return c.charAt(currPos + 1);
     }
-    function getChar(){
+    function getChar(pos, line){
     
     }
     
@@ -74,24 +90,58 @@
         }
         return nxtChar;
     }
-    function _compare(ch1, ch2){
-        var s1, s2;
-        if(ch1 !== ch2){
-            if(ch1 === " ")
+    function forEach(){
+        
+    }
+    function compareLines(line1, line2){
+    
+    }
+    
+    function lines(){
+        // get shorter umber of lines
+        var len = _c1.length > _c2.length ? _c2.length : _c1.length;
+        var i = 0;
+        for(; i < len; i++){
+            currLine = i;
+            compareLines(_c1[i], _c2[i]);
         }
     }
     
+    function getNextLine(){
+        return
+    }
+    
+    function parseLines(content){
+        var lines = [];
+        var lineStart = 0, lineEnd;
+        while(true){
+            lineEnd = content.indexOf(newLine, lineStart);
+            if(lineEnd == -1){
+                lines.push(content.slice(lineStart, content.length);
+                break;
+            }
+            lines.push(content.slice(lineStart, lineEnd));              
+            lineStart = lineEnd + 1;
+        }
+        return lines;
+    }
+        
     function setOptions(opts){
         opts = opts || defaultOptions;
         for(opt in opts){
             options[opt] = opts[opt]
         }
     }
+    
+    function setContent(ct1, ct2){
+        _c1 = parseLines(ct1);
+        _c2 = parseLines(ct2);
+    }
     // takes texts to be compared and returns a difference object if there
     // are differences and the details flag is true else it returns true if
     // no differences are found and false if differences are found. 
     exports.compare = function(c1, c2, opts){
         setOptions(opts);
-        return diff;
+        setContent(c1, c2);
     }
 })
