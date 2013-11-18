@@ -1,4 +1,12 @@
-// Structure of the change object
+/*
+ * Comparse
+ * parses content and outputs a list of change objects identifying differences
+ * http://
+ * Work based of "Javascript Diff Algorithm by John Resig (http://ejohn.org/)"
+ * More Info:
+ *  http://ejohn.org/projects/javascript-diff-algorithm/
+ */
+// Sample change object
 /* {
         value: '',
         start: {
@@ -25,123 +33,156 @@
     // Browser
     mdl(root.comparse || (root.comparse = {}));
 })(this, function(exports){
-    var options = {},
-        defaultOptions = {
-            ignoreSpaces : false,
-            words: false,
-            detail: true,
-        },
-        states: {
-            ra: "removed_added",
-            r: "removed",
-            a: "added"
-        },
-        currLine = 1,
-        currPos = -1,
-        changes = [], //array of difference objects
-        _c1 = null,
-        _c2 = null;
+    function escape(s) {
+        var n = s;
+        n = n.replace(/&/g, "&amp;");
+        n = n.replace(/</g, "&lt;");
+        n = n.replace(/>/g, "&gt;");
+        n = n.replace(/"/g, "&quot;");
     
-    var newLine = "\n";
-    
-    function moveNext(){
-        currLine
-    }
-    function isNewLine(ch){
-        return ch === "\n";
-    }
-    function isSpace(ch){
-        return ch === " "; 
+        return n;
     }
     
-    function peek(c){
-        return c.charAt(currPos + 1);
-    }
-    function getChar(pos, line){
+    function diffString( o, n ) {
+      o = o.replace(/\s+$/, '');
+      n = n.replace(/\s+$/, '');
+    console.log(o);
+      var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
+      var str = "";
+    console.log(out);
+      var oSpace = o.match(/\s+/g);
+      if (oSpace == null) {
+        oSpace = ["\n"];
+      } else {
+        oSpace.push("\n");
+      }
+      var nSpace = n.match(/\s+/g);
+      if (nSpace == null) {
+        nSpace = ["\n"];
+      } else {
+        nSpace.push("\n");
+      }
     
-    }
+      if (out.n.length == 0) {
+          for (var i = 0; i < out.o.length; i++) {
+            str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
+          }
+      } else {
+        if (out.n[0].text == null) {
+          for (n = 0; n < out.o.length && out.o[n].text == null; n++) {
+            str += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
+          }
+        }
     
-    function getWord(c){
-        var word = {
-            content: "",
-            start: null,
-            end: null
-        };
-        var nxtChar = getNext(c);
-        while(!isSpace(nxtChar)){
-            word.content += nxtChar;
-            if(!word.start){
-                word.start = { line: currLine, ch: currPos }
+        for ( var i = 0; i < out.n.length; i++ ) {
+          if (out.n[i].text == null) {
+            str += '<ins>' + escape(out.n[i]) + nSpace[i] + "</ins>";
+          } else {
+            var pre = "";
+    
+            for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++ ) {
+              pre += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
             }
-            nxtChar = getNext(c);
+            str += " " + out.n[i].text + nSpace[i] + pre;
+          }
         }
-        word.end { line: currLine, ch: currPos };
-        return word;
+      }
+      
+      return str;
     }
     
-    function getNext(c){
-        var nxtChar;
-        if(peek(c) === ""){
-            return false;
-        }
-        nxtChar = c.charAt(++currPos);
-        if(next === "\n"){
-            line++;
-        }
-        return nxtChar;
+    function randomColor() {
+        return "rgb(" + (Math.random() * 100) + "%, " + 
+                        (Math.random() * 100) + "%, " + 
+                        (Math.random() * 100) + "%)";
     }
-    function forEach(){
-        
-    }
-    function compareLines(line1, line2){
+    function diffString2( o, n ) {
+      o = o.replace(/\s+$/, '');
+      n = n.replace(/\s+$/, '');
     
-    }
+      var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
     
-    function lines(){
-        // get shorter umber of lines
-        var len = _c1.length > _c2.length ? _c2.length : _c1.length;
-        var i = 0;
-        for(; i < len; i++){
-            currLine = i;
-            compareLines(_c1[i], _c2[i]);
-        }
-    }
+      var oSpace = o.match(/\s+/g);
+      if (oSpace == null) {
+        oSpace = ["\n"];
+      } else {
+        oSpace.push("\n");
+      }
+      var nSpace = n.match(/\s+/g);
+      if (nSpace == null) {
+        nSpace = ["\n"];
+      } else {
+        nSpace.push("\n");
+      }
     
-    function getNextLine(){
-        return
-    }
+      var os = "";
+      var colors = new Array();
+      for (var i = 0; i < out.o.length; i++) {
+          colors[i] = randomColor();
     
-    function parseLines(content){
-        var lines = [];
-        var lineStart = 0, lineEnd;
-        while(true){
-            lineEnd = content.indexOf(newLine, lineStart);
-            if(lineEnd == -1){
-                lines.push(content.slice(lineStart, content.length);
-                break;
-            }
-            lines.push(content.slice(lineStart, lineEnd));              
-            lineStart = lineEnd + 1;
-        }
-        return lines;
-    }
-        
-    function setOptions(opts){
-        opts = opts || defaultOptions;
-        for(opt in opts){
-            options[opt] = opts[opt]
-        }
+          if (out.o[i].text != null) {
+              os += '<span style="background-color: ' +colors[i]+ '">' + 
+                    escape(out.o[i].text) + oSpace[i] + "</span>";
+          } else {
+              os += "<del>" + escape(out.o[i]) + oSpace[i] + "</del>";
+          }
+      }
+    
+      var ns = "";
+      for (var i = 0; i < out.n.length; i++) {
+          if (out.n[i].text != null) {
+              ns += '<span style="background-color: ' +colors[out.n[i].row]+ '">' + 
+                    escape(out.n[i].text) + nSpace[i] + "</span>";
+          } else {
+              ns += "<ins>" + escape(out.n[i]) + nSpace[i] + "</ins>";
+          }
+      }
+    
+      return { o : os , n : ns };
     }
     
-    function setContent(ct1, ct2){
-        _c1 = parseLines(ct1);
-        _c2 = parseLines(ct2);
-    }
-    // takes texts to be compared and returns a difference object if there
-    // are differences and the details flag is true else it returns true if
-    // no differences are found and false if differences are found. 
-    exports.compare = function(c1, c2, opts){
-        setOptions(opts);
-        setContent(c1, c2);
+    function diff( o, n ) {
+      var ns = new Object();
+      var os = new Object();
+      console.log(o);
+      for ( var i = 0; i < n.length; i++ ) {
+        if ( ns[ n[i] ] == null )
+          ns[ n[i] ] = { rows: new Array(), o: null };
+        ns[ n[i] ].rows.push( i );
+      }
+      
+      for ( var i = 0; i < o.length; i++ ) {
+        if ( os[ o[i] ] == null )
+          os[ o[i] ] = { rows: new Array(), n: null };
+        os[ o[i] ].rows.push( i );
+      }
+      
+      for ( var i in ns ) {
+        if ( ns[i].rows.length == 1 && typeof(os[i]) != "undefined" && os[i].rows.length == 1 ) {
+          n[ ns[i].rows[0] ] = { text: n[ ns[i].rows[0] ], row: os[i].rows[0] };
+          o[ os[i].rows[0] ] = { text: o[ os[i].rows[0] ], row: ns[i].rows[0] };
+        }
+      }
+      
+      for ( var i = 0; i < n.length - 1; i++ ) {
+        if ( n[i].text != null && n[i+1].text == null && n[i].row + 1 < o.length && o[ n[i].row + 1 ].text == null && 
+             n[i+1] == o[ n[i].row + 1 ] ) {
+          n[i+1] = { text: n[i+1], row: n[i].row + 1 };
+          o[n[i].row+1] = { text: o[n[i].row+1], row: i + 1 };
+        }
+      }
+      
+      for ( var i = n.length - 1; i > 0; i-- ) {
+        if ( n[i].text != null && n[i-1].text == null && n[i].row > 0 && o[ n[i].row - 1 ].text == null && 
+             n[i-1] == o[ n[i].row - 1 ] ) {
+          n[i-1] = { text: n[i-1], row: n[i].row - 1 };
+          o[n[i].row-1] = { text: o[n[i].row-1], row: i - 1 };
+        }
+      }
+      
+      return { o: o, n: n };
+    } 
+    exports.parse = function(c1, c2, opts){
+        return diffString(c1, c2);
     }
 })

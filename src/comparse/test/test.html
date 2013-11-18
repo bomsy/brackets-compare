@@ -1,0 +1,17 @@
+<!doctype>
+<html>
+    <head>
+        <script src="../comparse.js" type="text/javascript" ></script>
+        
+    </head>
+    
+    <body>
+        <script type="text/javascript">
+            var out = comparse.parse('function show(){\n\tvar n = 2; return n; var\n}',
+   'function show(){\n\tvar n = 2, a; return t; var c;\n}'
+);
+            document.body.innerHTML = out;
+            console.log(out);
+        </script>
+    </body>
+</html>
