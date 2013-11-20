@@ -8,15 +8,28 @@
  */
 // Sample change object
 /* {
-        value: '',
-        start: {
-            line: [1-n],
-            pos:  [0-n]
+        before: {
+            start: {
+                line: [1-n],
+                pos:  [0-n]
+            },
+            end: {
+                line: [1-n],
+                pos:  [0-n]
+            },
+            content: ""
         },
-        end: {
-            line: [1-n],
-            pos:  [0-n]
-        },
+        after: {
+            start: {
+                line: [1-n],
+                pos:  [0-n]
+            },
+            end: {
+                line: [1-n],
+                pos:  [0-n]
+            },
+            content: ""
+        }
         change: 'removed'|'added'|'replaced'
     }
 */
@@ -33,6 +46,11 @@
     // Browser
     mdl(root.comparse || (root.comparse = {}));
 })(this, function(exports){
+    var actions = {
+        add: "added",
+        remove: "removed",
+        replace: "replaced"
+    }
     function escape(s) {
         var n = s;
         n = n.replace(/&/g, "&amp;");
@@ -46,10 +64,11 @@
     function diffString( o, n ) {
       o = o.replace(/\s+$/, '');
       n = n.replace(/\s+$/, '');
-    console.log(o);
       var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
       var str = "";
+      var changes = [];
     console.log(out);
+        var len;
       var oSpace = o.match(/\s+/g);
       if (oSpace == null) {
         oSpace = ["\n"];
@@ -62,32 +81,110 @@
       } else {
         nSpace.push("\n");
       }
-    
+        //console.log(oSpace);
+        //console.log(nSpace);
+    var n_offset = 0;
+    var o_offset = 0;
+    var len;
+    var count = 0;
       if (out.n.length == 0) {
+          // empty string in new (the old string was removed)
           for (var i = 0; i < out.o.length; i++) {
+              changes[changes.length] = { 
+                  before: { content: escape(out.o[i]) + oSpace[i] }, 
+                  after: { content: "" },
+                  change: actions.remove
+              }
             str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
           }
       } else {
+          //------------------------------------------------------------------------
+          len = out.n.length > out.o.length ? out.n.length : out.o.length; 
+          for(var i = 0; i <  len; i++){
+            if(typeof out.n[i+n_offset] !== 'undefined' && typeof out.o[i+o_offset] !== 'undefined'){
+                // 2
+                if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] !== 'object'){
+                   changes[count] = {
+                        before: { content: escape(out.o[i+o_offset]) + oSpace[i] },
+                        after:  { content: escape(out.n[i+n_offset]) + nSpace[i] },
+                        change: actions.replace
+                   } 
+                   count++;
+                }
+                // 1
+                if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] === 'object'){
+                    changes[count] = {
+                        before: { content: '' },
+                        after:  { content: escape(out.n[i+n_offset]) + nSpace[i] },
+                        change: actions.add
+                   }
+                   n_offset++;
+                    count++;
+                }
+                // 3
+                if(typeof out.n[i+n_offset] === 'object' && typeof out.o[i+o_offset] !== 'object'){
+                    changes[count] = {
+                        before: { content: escape(out.o[i+o_offset]) + oSpace[i] },
+                        after:  { content: '' },
+                        change: actions.remove
+                   }
+                   o_offset++;
+                    count++;
+                }
+            } else {
+                if(typeof out.n[i+n_offset] === 'undefined'){ //no more new items
+                    for(var j = i + o_offset; j < out.o.length; j++){
+                        if(typeof out.o[j] !== 'object'){
+                            changes[count] = {
+                                before: { content: escape(out.o[j]) + oSpace[i] },
+                                after:  { content: '' },
+                                change: actions.remove
+                            }
+                            count++;
+                        }
+                    }
+                    break;
+                }
+                if(typeof out.o[i+o_offset] === 'undefined'){ //no more old items
+                    for(var j = i + n_offset; j < out.n.length; j++){
+                        if(typeof out.n[j] !== 'object'){
+                            changes[count] = {
+                                before: { content: '' },
+                                after:  { content: escape(out.n[j]) + nSpace[i] },
+                                change: actions.add
+                            }
+                            count++;
+                        }
+                    }
+                    break;
+                }
+            }
+          }
+          
+       //------------------------------------------------------------------------------
         if (out.n[0].text == null) {
+          // displaying everything that has been removed
           for (n = 0; n < out.o.length && out.o[n].text == null; n++) {
             str += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
           }
         }
-    
+        
         for ( var i = 0; i < out.n.length; i++ ) {
           if (out.n[i].text == null) {
+              // has been added
             str += '<ins>' + escape(out.n[i]) + nSpace[i] + "</ins>";
           } else {
+              // everything else
             var pre = "";
     
-            for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++ ) {
+            for (n = out.n[i].oldPos + 1; n < out.o.length && out.o[n].text == null; n++ ) {
               pre += '<del>' + escape(out.o[n]) + oSpace[n] + "</del>";
             }
             str += " " + out.n[i].text + nSpace[i] + pre;
           }
         }
       }
-      
+      console.log(changes)
       return str;
     }
     
@@ -96,6 +193,7 @@
                         (Math.random() * 100) + "%, " + 
                         (Math.random() * 100) + "%)";
     }
+    
     function diffString2( o, n ) {
       o = o.replace(/\s+$/, '');
       n = n.replace(/\s+$/, '');
@@ -131,7 +229,7 @@
       var ns = "";
       for (var i = 0; i < out.n.length; i++) {
           if (out.n[i].text != null) {
-              ns += '<span style="background-color: ' +colors[out.n[i].row]+ '">' + 
+              ns += '<span style="background-color: ' +colors[out.n[i].oldPos]+ '">' + 
                     escape(out.n[i].text) + nSpace[i] + "</span>";
           } else {
               ns += "<ins>" + escape(out.n[i]) + nSpace[i] + "</ins>";
@@ -142,9 +240,8 @@
     }
     
     function diff( o, n ) {
-      var ns = new Object();
-      var os = new Object();
-      console.log(o);
+      var ns = [];
+      var os = [];
       for ( var i = 0; i < n.length; i++ ) {
         if ( ns[ n[i] ] == null )
           ns[ n[i] ] = { rows: new Array(), o: null };
@@ -159,30 +256,30 @@
       
       for ( var i in ns ) {
         if ( ns[i].rows.length == 1 && typeof(os[i]) != "undefined" && os[i].rows.length == 1 ) {
-          n[ ns[i].rows[0] ] = { text: n[ ns[i].rows[0] ], row: os[i].rows[0] };
-          o[ os[i].rows[0] ] = { text: o[ os[i].rows[0] ], row: ns[i].rows[0] };
+          n[ ns[i].rows[0] ] = { text: n[ ns[i].rows[0] ], oldPos: os[i].rows[0] };
+          o[ os[i].rows[0] ] = { text: o[ os[i].rows[0] ], newPos: ns[i].rows[0] };
         }
       }
       
       for ( var i = 0; i < n.length - 1; i++ ) {
-        if ( n[i].text != null && n[i+1].text == null && n[i].row + 1 < o.length && o[ n[i].row + 1 ].text == null && 
-             n[i+1] == o[ n[i].row + 1 ] ) {
-          n[i+1] = { text: n[i+1], row: n[i].row + 1 };
-          o[n[i].row+1] = { text: o[n[i].row+1], row: i + 1 };
+        if ( n[i].text != null && n[i+1].text == null && n[i].oldPos + 1 < o.length && o[ n[i].oldPos + 1 ].text == null && 
+             n[i+1] == o[ n[i].oldPos + 1 ] ) {
+          n[i+1] = { text: n[i+1], oldPos: n[i].oldPos + 1 };
+          o[n[i].oldPos+1] = { text: o[n[i].oldPos+1], newPos: i + 1 };
         }
       }
       
       for ( var i = n.length - 1; i > 0; i-- ) {
-        if ( n[i].text != null && n[i-1].text == null && n[i].row > 0 && o[ n[i].row - 1 ].text == null && 
-             n[i-1] == o[ n[i].row - 1 ] ) {
-          n[i-1] = { text: n[i-1], row: n[i].row - 1 };
-          o[n[i].row-1] = { text: o[n[i].row-1], row: i - 1 };
+        if ( n[i].text != null && n[i-1].text == null && n[i].oldPos > 0 && o[ n[i].oldPos - 1 ].text == null && 
+             n[i-1] == o[ n[i].oldPos - 1 ] ) {
+          n[i-1] = { text: n[i-1], oldPos: n[i].oldPos - 1 };
+          o[n[i].oldPos-1] = { text: o[n[i].oldPos-1], newPos: i - 1 };
         }
       }
       
       return { o: o, n: n };
     } 
-    exports.parse = function(c1, c2, opts){
-        return diffString(c1, c2);
+    exports.parse = function(old, nw, opts){
+        return diffString(old, nw);
     }
 })
