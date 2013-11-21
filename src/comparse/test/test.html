@@ -7,7 +7,7 @@
     
     <body>
         <script type="text/javascript">
-            var out = comparse.parse('peter function show(){\n\tvar n = 2; return n; var\n}', 'function show(){\n\tvar n = 2; var\n}'
+            var out = comparse.parse('peter function show(){\n\tvar n = 2; return n; var\n}', 'function show(){\n\tvar n = 2; return n; let\n}}'
 );
             document.body.innerHTML = out;
         </script>

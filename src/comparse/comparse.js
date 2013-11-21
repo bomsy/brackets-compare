@@ -9,26 +9,18 @@
 // Sample change object
 /* {
         before: {
-            start: {
-                line: [1-n],
-                pos:  [0-n]
-            },
-            end: {
-                line: [1-n],
-                pos:  [0-n]
-            },
-            content: ""
+            startline:  [1-n],
+            startpos:   [0-n],
+            endline:    [1-n],
+            endpos:     [0-n]
+            content:    ''
         },
         after: {
-            start: {
-                line: [1-n],
-                pos:  [0-n]
-            },
-            end: {
-                line: [1-n],
-                pos:  [0-n]
-            },
-            content: ""
+            startline:  [1-n],
+            startpos:   [0-n]
+            endline:    [1-n],
+            endpos:     [0-n],
+            content:    ''
         }
         change: 'removed'|'added'|'replaced'
     }
@@ -67,8 +59,6 @@
       var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
       var str = "";
       var changes = [];
-    console.log(out);
-        var len;
       var oSpace = o.match(/\s+/g);
       if (oSpace == null) {
         oSpace = ["\n"];
@@ -81,18 +71,38 @@
       } else {
         nSpace.push("\n");
       }
-        //console.log(oSpace);
-        //console.log(nSpace);
+    console.log(out);
     var n_offset = 0;
     var o_offset = 0;
     var len;
+    var nline = 1;
+    var oline = 1;
+    var npos = 0;
+    var opos = 0;
     var count = 0;
+    var n_sizes = measure(out.n);
+    var o_sizes = measure(out.o);
+    var spc = 0
+        console.log(n_sizes);
+        console.log(o_sizes);
       if (out.n.length == 0) {
           // empty string in new (the old string was removed)
           for (var i = 0; i < out.o.length; i++) {
               changes[changes.length] = { 
-                  before: { content: escape(out.o[i]) + oSpace[i] }, 
-                  after: { content: "" },
+                  before: { 
+                    startline: oline,
+                    startpos: opos,
+                    endline: oline,
+                    endpos:opos += o_sizes[i],
+                    content: escape(out.o[i]) + oSpace[i] 
+                  }, 
+                  after: { 
+                    startline: null,
+                    startpos: null,
+                    endline: null,
+                    endpos: null,
+                    content: '' 
+                  },
                   change: actions.remove
               }
             str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
@@ -105,8 +115,20 @@
                 // 2
                 if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] !== 'object'){
                    changes[count] = {
-                        before: { content: escape(out.o[i+o_offset]) + oSpace[i] },
-                        after:  { content: escape(out.n[i+n_offset]) + nSpace[i] },
+                        before: { 
+                            startline: oline,
+                            startpos: 0,
+                            endline: 0,
+                            endpos: opos += o_sizes[i],
+                            content: escape(out.o[i+o_offset]) + oSpace[i] 
+                        },
+                        after:  { 
+                            startline: nline,
+                            startpos: 0,
+                            endline: 0,
+                            endpos: npos += n_sizes[i],
+                            content: escape(out.n[i+n_offset]) + nSpace[i] 
+                        },
                         change: actions.replace
                    } 
                    count++;
@@ -114,8 +136,20 @@
                 // 1
                 if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] === 'object'){
                     changes[count] = {
-                        before: { content: '' },
-                        after:  { content: escape(out.n[i+n_offset]) + nSpace[i] },
+                        before: {
+                            startline: null,
+                            startpos: null,
+                            endline: null,
+                            endpos: null,
+                            content: '' 
+                        },
+                        after:  {
+                            startline: nline,
+                            startpos: 0,
+                            endline: 0,
+                            endpos: npos += n_sizes[i],
+                            content: escape(out.n[i+n_offset]) + nSpace[i] 
+                        },
                         change: actions.add
                    }
                    n_offset++;
@@ -124,20 +158,45 @@
                 // 3
                 if(typeof out.n[i+n_offset] === 'object' && typeof out.o[i+o_offset] !== 'object'){
                     changes[count] = {
-                        before: { content: escape(out.o[i+o_offset]) + oSpace[i] },
-                        after:  { content: '' },
+                        before: { 
+                            startline: oline,
+                            startpos: 0,
+                            endline: 0,
+                            endpos: opos += o_sizes[i],
+                            content: escape(out.o[i+o_offset]) + oSpace[i] 
+                        },
+                        after:  { 
+                            startline: null,
+                            startpos: null,
+                            endline: null,
+                            endpos: null,
+                            content: '' 
+                        },
                         change: actions.remove
                    }
                    o_offset++;
                     count++;
                 }
             } else {
+                // one of the arrays has run out
                 if(typeof out.n[i+n_offset] === 'undefined'){ //no more new items
                     for(var j = i + o_offset; j < out.o.length; j++){
                         if(typeof out.o[j] !== 'object'){
                             changes[count] = {
-                                before: { content: escape(out.o[j]) + oSpace[i] },
-                                after:  { content: '' },
+                                before: { 
+                                    startline: oline,
+                                    startpos: 0,
+                                    endline: 0,
+                                    endpos: opos += o_sizes[i],
+                                    content: escape(out.o[j]) + oSpace[i] 
+                                },
+                                after:  { 
+                                    startline: null,
+                                    startpos: null,
+                                    endline: null,
+                                    endpos: null,
+                                    content: '' 
+                                },
                                 change: actions.remove
                             }
                             count++;
@@ -149,8 +208,20 @@
                     for(var j = i + n_offset; j < out.n.length; j++){
                         if(typeof out.n[j] !== 'object'){
                             changes[count] = {
-                                before: { content: '' },
-                                after:  { content: escape(out.n[j]) + nSpace[i] },
+                                before: { 
+                                    startline: null,
+                                    startpos: null,
+                                    endline: null,
+                                    endpos: null,
+                                    content: '' 
+                                },
+                                after:  { 
+                                    startline: nline,
+                                    startpos: 0,
+                                    endline: 0,
+                                    endpos: npos += n_sizes[i],
+                                    content: escape(out.n[j]) + nSpace[i] 
+                                },
                                 change: actions.add
                             }
                             count++;
@@ -188,13 +259,13 @@
       return str;
     }
     
-    function randomColor() {
+    /*function randomColor() {
         return "rgb(" + (Math.random() * 100) + "%, " + 
                         (Math.random() * 100) + "%, " + 
                         (Math.random() * 100) + "%)";
-    }
+    }*/
     
-    function diffString2( o, n ) {
+    /*function diffString2( o, n ) {
       o = o.replace(/\s+$/, '');
       n = n.replace(/\s+$/, '');
     
@@ -237,7 +308,18 @@
       }
     
       return { o : os , n : ns };
-    }
+    }*/
+    function measure(o){
+        var s = [];
+        for(var i = 0; i < o.length; i++){
+            if(typeof o[i] === "object"){
+                s[i] = o[i].text.length;
+            }else{
+                s[i] = o[i].length;
+            }
+        }
+        return s;
+    };
     
     function diff( o, n ) {
       var ns = [];
