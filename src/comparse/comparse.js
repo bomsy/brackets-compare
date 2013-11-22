@@ -42,7 +42,8 @@
         add: "added",
         remove: "removed",
         replace: "replaced"
-    }
+    };
+    
     function escape(s) {
         var n = s;
         n = n.replace(/&/g, "&amp;");
@@ -54,9 +55,74 @@
     }
     
     function diffString( o, n ) {
-      o = o.replace(/\s+$/, '');
-      n = n.replace(/\s+$/, '');
-      var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
+        o = o.replace(/\s+$/, '');
+        n = n.replace(/\s+$/, '');
+        var chnges =[];
+        var nlines = n.split('\n');
+        var olines = o.split('\n');
+        var ops = 0;
+        var nps = 0;
+        console.log(nlines);
+        console.log(olines);
+        
+        var lines = [];
+        var lgth = nlines.length > olines.length ? nlines.length : olines.length;
+        
+        for(var i = 0; i < lgth; i++){
+            if(typeof nlines[i] !== 'undefined' && typeof olines[i] !== 'undefined'){
+                lines[i] = diff(olines[i] === '' ? [] : olines[i].split(/\s+/), nlines[i] === '' ? [] : nlines[i].split(/\s+/) );
+            }else{
+                if(typeof nlines[i] === 'undefined'){
+                    lines[i] = { o: olines[i].split(/\s+/), n: [] }
+                }
+                if(typeof olines[i] === 'undefined'){
+                    lines[i] = { o: [], n: nlines[i].split(/\s+/) }
+                }
+            }
+        }
+        
+        var oSpaces = [];
+        var nSpaces = [];
+        
+        for(var i=0; i<nlines.length;i++){
+            nSpaces[i] = nlines[i].match(/\s+/g)
+        }
+        for(var j=0; j<olines.length;j++){
+            oSpaces[j] = olines[j].match(/\s+/g)
+        }
+        
+        console.log(lines);
+        console.log(nSpaces);
+        console.log(oSpaces);
+//---------------------------------------------------------------------------------------------------------------------
+        for(var k = 0; k < lgth; k++){
+            if(lines[k].n.length === 0){
+                for (var l = 0; l < lines[k].o.length; l++) {
+                    chnges[chnges.length] = { 
+                      before: { 
+                        startpos: ops,
+                        endpos: ops += ops + lines[k].o[l].length,
+                        content: escape(lines[k].o[l])
+                      }, 
+                      after: { 
+                        startpos: null,
+                        endpos: null,
+                        content: '' 
+                      },
+                      line : k,
+                      change: actions.remove
+                  }
+                } 
+            } else {
+            
+            }
+            ops = 0;
+        }
+        console.log("---------- Changes -------------------");
+        console.log(chnges);
+        console.log("---------- end -------------------");
+//---------------------------------------------------------------------------------------------------------------------
+      var out = diff(o == '' ? [] : o.split(/\s+/), n == '' ? [] : n.split(/\s+/) );
       var str = "";
       var changes = [];
       var oSpace = o.match(/\s+/g);
@@ -71,7 +137,7 @@
       } else {
         nSpace.push("\n");
       }
-    console.log(out);
+    //console.log(out);
     var n_offset = 0;
     var o_offset = 0;
     var len;
@@ -80,11 +146,13 @@
     var npos = 0;
     var opos = 0;
     var count = 0;
+    var spcOffset = 1;
     var n_sizes = measure(out.n);
     var o_sizes = measure(out.o);
     var spc = 0
+        /*console.log(oSpace);
         console.log(n_sizes);
-        console.log(o_sizes);
+        console.log(o_sizes);*/
       if (out.n.length == 0) {
           // empty string in new (the old string was removed)
           for (var i = 0; i < out.o.length; i++) {
@@ -93,7 +161,7 @@
                     startline: oline,
                     startpos: opos,
                     endline: oline,
-                    endpos:opos += o_sizes[i],
+                    endpos:opos += o_sizes[i] + (oSpace[i].indexOf('\n') === -1 ? oSpace[i].length : oSpace[i].indexOf('\n') + spcOffset),
                     content: escape(out.o[i]) + oSpace[i] 
                   }, 
                   after: { 
@@ -105,7 +173,11 @@
                   },
                   change: actions.remove
               }
-            str += '<del>' + escape(out.o[i]) + oSpace[i] + "</del>";
+              if(oSpace[i].indexOf('\n') !== -1){
+                  oline++;
+                  opos = oSpace[i].length - (oSpace[i].indexOf('\n') + spcOffset);
+              }
+            str += '<del>' + escape(out.o[i]) + oSpace[i] + '</del>';
           }
       } else {
           //------------------------------------------------------------------------
@@ -117,24 +189,23 @@
                    changes[count] = {
                         before: { 
                             startline: oline,
-                            startpos: 0,
+                            startpos: opos,
                             endline: 0,
-                            endpos: opos += o_sizes[i],
+                            endpos: opos += o_sizes[i] + (oSpace[i].indexOf('\n') === -1 ? oSpace[i].length : oSpace[i].indexOf('\n') + spcOffset),
                             content: escape(out.o[i+o_offset]) + oSpace[i] 
                         },
                         after:  { 
                             startline: nline,
-                            startpos: 0,
+                            startpos: npos,
                             endline: 0,
-                            endpos: npos += n_sizes[i],
+                            endpos: npos += n_sizes[i] + (nSpace[i].indexOf('\n') === -1 ? nSpace[i].length : nSpace[i].indexOf('\n') + spcOffset),
                             content: escape(out.n[i+n_offset]) + nSpace[i] 
                         },
                         change: actions.replace
                    } 
                    count++;
-                }
-                // 1
-                if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] === 'object'){
+                }else if(typeof out.n[i+n_offset] !== 'object' && typeof out.o[i+o_offset] === 'object'){
+                    // 1
                     changes[count] = {
                         before: {
                             startline: null,
@@ -145,7 +216,7 @@
                         },
                         after:  {
                             startline: nline,
-                            startpos: 0,
+                            startpos: npos,
                             endline: 0,
                             endpos: npos += n_sizes[i],
                             content: escape(out.n[i+n_offset]) + nSpace[i] 
@@ -154,13 +225,12 @@
                    }
                    n_offset++;
                     count++;
-                }
-                // 3
-                if(typeof out.n[i+n_offset] === 'object' && typeof out.o[i+o_offset] !== 'object'){
+                }else if(typeof out.n[i+n_offset] === 'object' && typeof out.o[i+o_offset] !== 'object'){
+                    // 3
                     changes[count] = {
                         before: { 
                             startline: oline,
-                            startpos: 0,
+                            startpos: opos,
                             endline: 0,
                             endpos: opos += o_sizes[i],
                             content: escape(out.o[i+o_offset]) + oSpace[i] 
@@ -176,6 +246,9 @@
                    }
                    o_offset++;
                     count++;
+                }else {
+                    opos += o_sizes[i];
+                    npos += n_sizes[i];
                 }
             } else {
                 // one of the arrays has run out
@@ -185,7 +258,7 @@
                             changes[count] = {
                                 before: { 
                                     startline: oline,
-                                    startpos: 0,
+                                    startpos: opos,
                                     endline: 0,
                                     endpos: opos += o_sizes[i],
                                     content: escape(out.o[j]) + oSpace[i] 
@@ -217,7 +290,7 @@
                                 },
                                 after:  { 
                                     startline: nline,
-                                    startpos: 0,
+                                    startpos: npos,
                                     endline: 0,
                                     endpos: npos += n_sizes[i],
                                     content: escape(out.n[j]) + nSpace[i] 
@@ -255,60 +328,12 @@
           }
         }
       }
-      console.log(changes)
+      console.log(changes);
+      console.log(str.replace("<del>", ""));
       return str;
     }
     
-    /*function randomColor() {
-        return "rgb(" + (Math.random() * 100) + "%, " + 
-                        (Math.random() * 100) + "%, " + 
-                        (Math.random() * 100) + "%)";
-    }*/
-    
-    /*function diffString2( o, n ) {
-      o = o.replace(/\s+$/, '');
-      n = n.replace(/\s+$/, '');
-    
-      var out = diff(o == "" ? [] : o.split(/\s+/), n == "" ? [] : n.split(/\s+/) );
-    
-      var oSpace = o.match(/\s+/g);
-      if (oSpace == null) {
-        oSpace = ["\n"];
-      } else {
-        oSpace.push("\n");
-      }
-      var nSpace = n.match(/\s+/g);
-      if (nSpace == null) {
-        nSpace = ["\n"];
-      } else {
-        nSpace.push("\n");
-      }
-    
-      var os = "";
-      var colors = new Array();
-      for (var i = 0; i < out.o.length; i++) {
-          colors[i] = randomColor();
-    
-          if (out.o[i].text != null) {
-              os += '<span style="background-color: ' +colors[i]+ '">' + 
-                    escape(out.o[i].text) + oSpace[i] + "</span>";
-          } else {
-              os += "<del>" + escape(out.o[i]) + oSpace[i] + "</del>";
-          }
-      }
-    
-      var ns = "";
-      for (var i = 0; i < out.n.length; i++) {
-          if (out.n[i].text != null) {
-              ns += '<span style="background-color: ' +colors[out.n[i].oldPos]+ '">' + 
-                    escape(out.n[i].text) + nSpace[i] + "</span>";
-          } else {
-              ns += "<ins>" + escape(out.n[i]) + nSpace[i] + "</ins>";
-          }
-      }
-    
-      return { o : os , n : ns };
-    }*/
+   
     function measure(o){
         var s = [];
         for(var i = 0; i < o.length; i++){
