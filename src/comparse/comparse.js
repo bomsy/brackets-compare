@@ -62,6 +62,12 @@
         var olines = o.split('\n');
         var ops = 0;
         var nps = 0;
+        var ln;
+        var noffset = 0;
+        var ooffset = 0;
+        var cline;
+        var cnt = 0;
+        
         console.log(nlines);
         console.log(olines);
         
@@ -84,29 +90,30 @@
         var oSpaces = [];
         var nSpaces = [];
         
-        for(var i=0; i<nlines.length;i++){
+        for(var i = 0; i < nlines.length; i++){
             nSpaces[i] = nlines[i].match(/\s+/g)
         }
-        for(var j=0; j<olines.length;j++){
+        for(var j = 0; j < olines.length; j++){
             oSpaces[j] = olines[j].match(/\s+/g)
         }
         
         console.log(lines);
-        console.log(nSpaces);
-        console.log(oSpaces);
+        //console.log(nSpaces);
+        //console.log(oSpaces);
 //---------------------------------------------------------------------------------------------------------------------
         for(var k = 0; k < lgth; k++){
-            if(lines[k].n.length === 0){
-                for (var l = 0; l < lines[k].o.length; l++) {
+            cline = lines[k];
+            if(cline.n.length === 0){
+                for (var l = 0; l < cline.o.length; l++) {
                     chnges[chnges.length] = { 
                       before: { 
                         startpos: ops,
-                        endpos: ops += ops + lines[k].o[l].length,
-                        content: escape(lines[k].o[l])
+                        endpos: ops = ops + cline.o[l].length,
+                        content: escape(cline.o[l])
                       }, 
                       after: { 
-                        startpos: null,
-                        endpos: null,
+                        startpos: -1,
+                        endpos: -1,
                         content: '' 
                       },
                       line : k,
@@ -114,9 +121,117 @@
                   }
                 } 
             } else {
-            
+                ln = cline.n.length > cline.o.length ? cline.n.length : cline.o.length;
+                for(var m = 0; m < ln; m++){
+                   if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] !== 'undefined'){
+                       if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] !== 'object'){
+                           // content was replaced
+                           chnges[cnt] = {
+                                before: { 
+                                    startpos: ops,
+                                    endpos: ops = ops + cline.o[m + ooffset].length,
+                                    content: escape(cline.o[m + ooffset])
+                                },
+                                after:  { 
+                                    startpos: nps,
+                                    endpos: nps = nps + cline.n[m + noffset].length,
+                                    content: escape(cline.n[m + noffset])
+                                },
+                                line: k,
+                                change: actions.replace
+                           } 
+                           cnt++;
+                        } else if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] === 'object'){
+                            // content was added
+                            chnges[cnt] = {
+                                before: {
+                                    startpos: -1,
+                                    endpos: -1,
+                                    content: '' 
+                                },
+                                after:  {
+                                    startpos: nps,
+                                    endpos: nps = nps + cline.n[m + noffset].length,
+                                    content: escape(cline.n[m + noffset])
+                                },
+                                line: k,
+                                change: actions.add
+                           }
+                           noffset++;
+                           cnt++;
+                        } else if(typeof cline.n[m + noffset] === 'object' && typeof cline.o[m + ooffset] !== 'object'){
+                            // content was removed
+                            chnges[cnt] = {
+                                before: { 
+                                    startpos: ops,
+                                    endpos: ops = ops + cline.o[m + ooffset].length,
+                                    content: escape(cline.o[m + ooffset])
+                                },
+                                after:  { 
+                                    startpos: -1,
+                                    endpos: -1,
+                                    content: '' 
+                                },
+                                line: k,
+                                change: actions.remove
+                           }
+                           ooffset++;
+                           cnt++;
+                      } else {
+                          // content never changed
+                          ops = ops + cline.o[m + ooffset].text.length;
+                          nps = nps + cline.n[m + noffset].text.length;
+                      }
+                   }else { //if one of the arrays run out
+                       if(typeof cline.n[m + noffset] === 'undefined'){ //no more new items
+                            for(var j = m + ooffset; j < cline.o.length; j++){
+                                if(typeof cline.o[j] !== 'object'){
+                                    chnges[cnt] = {
+                                        before: { 
+                                            startpos: ops,
+                                            endpos: ops = ops + cline.o[j].length,
+                                            content: escape(cline.o[j]) 
+                                        },
+                                        after:  { 
+                                            startpos: -1,
+                                            endpos: -1,
+                                            content: '' 
+                                        },
+                                        line: k,
+                                        change: actions.remove
+                                    }
+                                    cnt++;
+                                }
+                            }
+                            break;
+                        }
+                       if(typeof cline.o[m + ooffset] === 'undefined'){ //no more old items
+                            for(var j = m + noffset; j < cline.n.length; j++){
+                                if(typeof cline.n[j] !== 'object'){
+                                    chnges[cnt] = {
+                                        before: { 
+                                            startpos: -1,
+                                            endpos: -1,
+                                            content: '' 
+                                        },
+                                        after:  { 
+                                            startpos: nps,
+                                            endpos: nps = nps + cline.n[j].length,
+                                            content: escape(cline.n[j])
+                                        },
+                                        line: k,
+                                        change: actions.add
+                                    }
+                                    cnt++;
+                                }
+                            }
+                            break;
+                        }
+                   }
+                }
             }
             ops = 0;
+            nps = 0;
         }
         console.log("---------- Changes -------------------");
         console.log(chnges);
