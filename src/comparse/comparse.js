@@ -6,25 +6,7 @@
  * More Info:
  *  http://ejohn.org/projects/javascript-diff-algorithm/
  */
-// Sample change object
-/* {
-        before: {
-            startline:  [1-n],
-            startpos:   [0-n],
-            endline:    [1-n],
-            endpos:     [0-n]
-            content:    ''
-        },
-        after: {
-            startline:  [1-n],
-            startpos:   [0-n]
-            endline:    [1-n],
-            endpos:     [0-n],
-            content:    ''
-        }
-        change: 'removed'|'added'|'replaced'
-    }
-*/
+
 (function(root, mdl){
     // CommonJS
     if(typeof exports === "object" && typeof module === "object"){
@@ -38,6 +20,7 @@
     // Browser
     mdl(root.comparse || (root.comparse = {}));
 })(this, function(exports){
+    
     var actions = {
         add: "added",
         remove: "removed",
@@ -46,6 +29,7 @@
     
     function escape(s) {
         var n = s;
+        
         n = n.replace(/&/g, "&amp;");
         n = n.replace(/</g, "&lt;");
         n = n.replace(/>/g, "&gt;");
@@ -54,9 +38,10 @@
         return n;
     }
     
-    function diffString( o, n ) {
+    function changes( o, n ) {
         o = o.replace(/\s+$/, '');
         n = n.replace(/\s+$/, '');
+        
         var chnges =[];
         var nlines = n.split('\n');
         var olines = o.split('\n');
@@ -69,10 +54,10 @@
         var cnt = 0;
         var LINEOFFSET = 1;
         var lineNo;
-        console.log(nlines);
-        console.log(olines);
-        
+        var oSpaces = [];
+        var nSpaces = [];
         var lines = [];
+        
         var lgth = nlines.length > olines.length ? nlines.length : olines.length;
         
         for(var i = 0; i < lgth; i++){
@@ -88,9 +73,6 @@
             }
         }
         
-        var oSpaces = [];
-        var nSpaces = [];
-        
         for(var i = 0; i < nlines.length; i++){
             nSpaces[i] = nlines[i].match(/\s+/g)
         }
@@ -98,11 +80,12 @@
             oSpaces[j] = olines[j].match(/\s+/g)
         }
         
-        //console.log(lines);
-        console.log("spaces")
+        /*console.log("------------lines--------")
+        console.log(lines);
+        console.log("------------spaces--------")
         console.log(nSpaces);
-        console.log(oSpaces);
-//---------------------------------------------------------------------------------------------------------------------
+        console.log(oSpaces);*/
+        
         for(var k = 0; k < lgth; k++){
             cline = lines[k];
             lineNo = k + LINEOFFSET;
@@ -110,18 +93,19 @@
                 for (var l = 0; l < cline.o.length; l++) {
                     chnges[chnges.length] = { 
                       before: { 
-                        startpos: ops == 0 ? ops : ops += (oSpaces[k] !== null && oSpaces[k][l-1] ? oSpaces[k][l-1].length : 0),
-                        endpos: (ops = ops + cline.o[l].length) - 1 ,
+                        startpos: ops,
+                        endpos: cline.o[l].length !== 0 ? (ops = ops + cline.o[l].length) - 1 : ops,
                         content: escape(cline.o[l])
                       }, 
                       after: { 
-                        startpos: -1,
-                        endpos: -1,
+                        startpos: null,
+                        endpos: null,
                         content: '' 
                       },
                       line : lineNo,
                       change: actions.remove
                   }
+                  ops += (oSpaces[k] !== null && oSpaces[k][l] ? oSpaces[k][l].length : 0)
                 } 
             } else {
                 ln = cline.n.length > cline.o.length ? cline.n.length : cline.o.length;
@@ -132,34 +116,37 @@
                            chnges[cnt] = {
                                 before: { 
                                     startpos: ops,
-                                    endpos: (ops = ops + cline.o[m + ooffset].length) - 1,
+                                    endpos: cline.o[m + ooffset].length !== 0 ? (ops = ops + cline.o[m + ooffset].length) - 1 : ops,
                                     content: escape(cline.o[m + ooffset])
                                 },
                                 after:  { 
                                     startpos: nps,
-                                    endpos: (nps = nps + cline.n[m + noffset].length) - 1,
+                                    endpos: cline.n[m + noffset].length !== 0 ? (nps = nps + cline.n[m + noffset].length) - 1 : nps,
                                     content: escape(cline.n[m + noffset])
                                 },
                                 line: lineNo,
                                 change: actions.replace
                            } 
+                           ops += (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
+                           nps += (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
                            cnt++;
                         } else if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] === 'object'){
                             // content was added
                             chnges[cnt] = {
                                 before: {
-                                    startpos: -1,
-                                    endpos: -1,
+                                    startpos: null,
+                                    endpos: null,
                                     content: '' 
                                 },
                                 after:  {
                                     startpos: nps,
-                                    endpos: (nps = nps + cline.n[m + noffset].length) - 1,
+                                    endpos: cline.n[m + noffset].length !== 0 ? (nps = nps + cline.n[m + noffset].length) - 1 : nps,
                                     content: escape(cline.n[m + noffset])
                                 },
                                 line: lineNo,
                                 change: actions.add
                            }
+                            nps += (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
                            noffset++;
                            cnt++;
                         } else if(typeof cline.n[m + noffset] === 'object' && typeof cline.o[m + ooffset] !== 'object'){
@@ -167,43 +154,45 @@
                             chnges[cnt] = {
                                 before: { 
                                     startpos: ops,
-                                    endpos: (ops = ops + cline.o[m + ooffset].length) - 1,
+                                    endpos: cline.o[m + ooffset].length !== 0 ? (ops = ops + cline.o[m + ooffset].length) - 1 : ops,
                                     content: escape(cline.o[m + ooffset])
                                 },
                                 after:  { 
-                                    startpos: -1,
-                                    endpos: -1,
+                                    startpos: null,
+                                    endpos: null,
                                     content: '' 
                                 },
                                 line: lineNo,
                                 change: actions.remove
                            }
+                            ops += (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
                            ooffset++;
                            cnt++;
                       } else {
                           // content never changed
-                          ops = ops + cline.o[m + ooffset].text.length //+ oSpaces[k][m].length;
-                          nps = nps + cline.n[m + noffset].text.length //+ nSpaces[k][m].length;
+                          ops = ops + cline.o[m + ooffset].text.length + (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
+                          nps = nps + cline.n[m + noffset].text.length + (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0); 
                       }
-                   }else { //if one of the arrays run out
+                   } else { //if one of the arrays run out
                        if(typeof cline.n[m + noffset] === 'undefined'){ //no more new items
                             for(var j = m + ooffset; j < cline.o.length; j++){
                                 if(typeof cline.o[j] !== 'object'){
                                     chnges[cnt] = {
                                         before: { 
                                             startpos: ops,
-                                            endpos: (ops = ops + cline.o[j].length) - 1,
+                                            endpos: cline.o[j].length !== 0 ? (ops = ops + cline.o[j].length) - 1 : ops,
                                             content: escape(cline.o[j]) 
                                         },
                                         after:  { 
-                                            startpos: -1,
-                                            endpos: -1,
+                                            startpos: null,
+                                            endpos: null,
                                             content: '' 
                                         },
                                         line: lineNo,
                                         change: actions.remove
                                     }
                                     cnt++;
+                                    ops += (oSpaces[k] !== null && oSpaces[k][j] ? oSpaces[k][j].length : 0)
                                 }
                             }
                             break;
@@ -213,19 +202,20 @@
                                 if(typeof cline.n[j] !== 'object'){
                                     chnges[cnt] = {
                                         before: { 
-                                            startpos: -1,
-                                            endpos: -1,
+                                            startpos: null,
+                                            endpos: null,
                                             content: '' 
                                         },
                                         after:  { 
                                             startpos: nps,
-                                            endpos: (nps = nps + cline.n[j].length) - 1,
+                                            endpos: cline.n[j].length !== 0 ? (nps = nps + cline.n[j].length) - 1 : nps,
                                             content: escape(cline.n[j])
                                         },
                                         line: lineNo,
                                         change: actions.add
                                     }
                                     cnt++;
+                                    nps += (nSpaces[k] !== null && nSpaces[k][j] ? nSpaces[k][j].length : 0);
                                 }
                             }
                             break;
@@ -235,11 +225,12 @@
             }
             ops = 0;
             nps = 0;
+            noffset = 0;
+            ooffset = 0;
         }
         console.log("---------- Changes -------------------");
         console.log(chnges);
         console.log("---------- end -------------------");
-
     };
     
     function diff( o, n ) {
@@ -282,7 +273,7 @@
       
       return { o: o, n: n };
     } 
-    exports.parse = function(old, nw, opts){
-        return diffString(old, nw);
+    exports.parse = function(before, after, opts){
+        return changes(before, after);
     }
 })
