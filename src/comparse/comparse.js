@@ -100,7 +100,7 @@
                       after: { 
                         startpos: null,
                         endpos: null,
-                        content: '' 
+                        content: null 
                       },
                       line : lineNo,
                       change: actions.remove
@@ -110,8 +110,8 @@
             } else {
                 ln = cline.n.length > cline.o.length ? cline.n.length : cline.o.length;
                 for(var m = 0; m < ln; m++){
-                   if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] !== 'undefined'){
-                       if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] !== 'object'){
+                   if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] !== 'undefined') {               
+                       if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] !== 'object') {
                            // content was replaced
                            chnges[cnt] = {
                                 before: { 
@@ -130,13 +130,13 @@
                            ops += (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
                            nps += (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
                            cnt++;
-                        } else if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] === 'object'){
+                        } else if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] === 'object') {
                             // content was added
                             chnges[cnt] = {
                                 before: {
                                     startpos: null,
                                     endpos: null,
-                                    content: '' 
+                                    content: null 
                                 },
                                 after:  {
                                     startpos: nps,
@@ -149,7 +149,7 @@
                             nps += (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
                            noffset++;
                            cnt++;
-                        } else if(typeof cline.n[m + noffset] === 'object' && typeof cline.o[m + ooffset] !== 'object'){
+                        } else if(typeof cline.n[m + noffset] === 'object' && typeof cline.o[m + ooffset] !== 'object') {
                             // content was removed
                             chnges[cnt] = {
                                 before: { 
@@ -160,7 +160,7 @@
                                 after:  { 
                                     startpos: null,
                                     endpos: null,
-                                    content: '' 
+                                    content: null 
                                 },
                                 line: lineNo,
                                 change: actions.remove
@@ -171,7 +171,7 @@
                       } else {
                           // content never changed
                           ops = ops + cline.o[m + ooffset].text.length + (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
-                          nps = nps + cline.n[m + noffset].text.length + (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0); 
+                          nps = nps + cline.n[m + noffset].text.length + (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0); 
                       }
                    } else { //if one of the arrays run out
                        if(typeof cline.n[m + noffset] === 'undefined'){ //no more new items
@@ -186,7 +186,7 @@
                                         after:  { 
                                             startpos: null,
                                             endpos: null,
-                                            content: '' 
+                                            content: null 
                                         },
                                         line: lineNo,
                                         change: actions.remove
@@ -204,7 +204,7 @@
                                         before: { 
                                             startpos: null,
                                             endpos: null,
-                                            content: '' 
+                                            content: null 
                                         },
                                         after:  { 
                                             startpos: nps,
@@ -231,6 +231,7 @@
         console.log("---------- Changes -------------------");
         console.log(chnges);
         console.log("---------- end -------------------");
+        return chnges;
     };
     
     function diff( o, n ) {
