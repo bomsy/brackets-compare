@@ -64,7 +64,7 @@ define(function (require, exports, module) {
                             comparePanel.show();
                             compareHeader.text( " brackets-compare : " + filepath + " ");
                             compareEditor.setValue(textContent);
-                            compareEditor.markText({line: 32, ch: 10},{ line: 32, ch: 20}, {
+                            compareEditor.markText({line: 32, ch: 10 },{ line: 32, ch: 20 }, {
                                 className: "present"
                             });
                         }

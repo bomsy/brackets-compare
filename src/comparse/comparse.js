@@ -57,6 +57,7 @@
         var oSpaces = [];
         var nSpaces = [];
         var lines = [];
+        var m = 0;
         
         var lgth = nlines.length > olines.length ? nlines.length : olines.length;
         
@@ -109,9 +110,10 @@
                 } 
             } else {
                 ln = cline.n.length > cline.o.length ? cline.n.length : cline.o.length;
-                for(var m = 0; m < ln; m++){
-                   if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] !== 'undefined') {               
-                       if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] !== 'object') {
+                //for(var m = 0; m < ln; m++){
+                while(true){
+                   if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] !== 'undefined') {
+                       if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] !== 'object') {                      
                            // content was replaced
                            chnges[cnt] = {
                                 before: { 
@@ -129,6 +131,8 @@
                            } 
                            ops += (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
                            nps += (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
+                           noffset++;
+                           ooffset++;
                            cnt++;
                         } else if(typeof cline.n[m + noffset] !== 'object' && typeof cline.o[m + ooffset] === 'object') {
                             // content was added
@@ -171,10 +175,12 @@
                       } else {
                           // content never changed
                           ops = ops + cline.o[m + ooffset].text.length + (oSpaces[k] !== null && oSpaces[k][m] ? oSpaces[k][m].length : 0);
-                          nps = nps + cline.n[m + noffset].text.length + (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0); 
+                          nps = nps + cline.n[m + noffset].text.length + (nSpaces[k] !== null && nSpaces[k][m] ? nSpaces[k][m].length : 0);
+                          noffset++;
+                          ooffset++;
                       }
                    } else { //if one of the arrays run out
-                       if(typeof cline.n[m + noffset] === 'undefined'){ //no more new items
+                       if(typeof cline.n[m + noffset] === 'undefined' && typeof cline.o[m + ooffset] !== 'undefined'){ //no more new items
                             for(var j = m + ooffset; j < cline.o.length; j++){
                                 if(typeof cline.o[j] !== 'object'){
                                     chnges[cnt] = {
@@ -196,8 +202,7 @@
                                 }
                             }
                             break;
-                        }
-                       if(typeof cline.o[m + ooffset] === 'undefined'){ //no more old items
+                        } else if(typeof cline.n[m + noffset] !== 'undefined' && typeof cline.o[m + ooffset] === 'undefined'){ //no more old items
                             for(var j = m + noffset; j < cline.n.length; j++){
                                 if(typeof cline.n[j] !== 'object'){
                                     chnges[cnt] = {
@@ -219,18 +224,20 @@
                                 }
                             }
                             break;
+                        } else {
+                            break;
                         }
                    }
-                }
+                } //end while or for
             }
             ops = 0;
             nps = 0;
             noffset = 0;
             ooffset = 0;
         }
-        console.log("---------- Changes -------------------");
+        /*console.log("---------- Changes -------------------");
         console.log(chnges);
-        console.log("---------- end -------------------");
+        console.log("---------- end -------------------");*/
         return chnges;
     };
     
