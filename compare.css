@@ -7,10 +7,14 @@
     height: 16px;
 }
 
-.present {
+.added {
     background-color: #99FFCC;
 }
-.absent {
+.removed {
     background-color: #FF99CC;
     border-radius: 3px;
+}
+.replaced {
+    background-color: #FF9900;
+    /*border-radius: 3px;*/
 }

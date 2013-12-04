@@ -14,84 +14,125 @@ define(function (require, exports, module) {
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         FileUtils           = brackets.getModule("file/FileUtils");
     
-    var comparePanel  = null,
-        textArea      = null,
-        compareEditor = null,
-        compareHeader = null,
-        contentModes = {
+    var comparse            = require("src/comparse/comparse"),
+        comparseOptions     = {
+            zeroLineIndex : true,
+            zeroCharIndex : true
+        };
+    
+    var panel  = null,
+        area   = null,
+        editor = null,
+        header = null,
+        
+        modes = {
             html: "text/html",
             css : "css",
             js  : "javascript"
         },
-        markup = "<div id='brackets-compare' class='brackets-compare bottom-panel'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' ></textarea></div>";
+        MARKUP = "<div id='brackets-compare' class='brackets-compare bottom-panel'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' ></textarea></div>",
+        
+        prjContextMenu = null,
+        wsContextMenu = null,
+        
+        COMPARE_COMMAND_ID = "compare.openFileDialog",
+        COMPARE_COMMAND_TEXT = "Compare with... ",
+        COMPARE_COMMAND_PANEL = "compare.comparefile";
     
     AppInit.htmlReady(function () {
         // Load stylesheet
         ExtensionUtils.loadStyleSheet(module, "compare.css");
         
-        comparePanel = PanelManager.createBottomPanel("compare.comparefile", $(markup), 1000);
-        textArea = document.querySelector("#compare-textarea");
-        compareHeader = $("#compare-header");
+        // Build the panel
+        panel = PanelManager.createBottomPanel(COMPARE_COMMAND_PANEL, $(MARKUP), 1000);
+        
+        area = document.querySelector("#compare-textarea");
+        header = $("#compare-header");
+        
         $(DocumentManager).on("currentDocumentChange", function(){
-            comparePanel.hide();
+            panel.hide();
         });
     });
-
-    function loadCodeMirror(contentArea, contentMode){
-        return CodeMirror.fromTextArea(contentArea, { 
-            mode: contentMode, 
-            lineNumbers: true,
-            lineWrapping: true
-        });
+    
+    function logError(err){
+        console.log(err);
     }
     
-    function reloadCodeMirror(contentArea, contentMode){
-        if(compareEditor){
-            compareEditor.toTextArea();
-        }
-        compareEditor = loadCodeMirror(contentArea, contentMode);
-        compareEditor.setSize(null, "97.55%");
+    function readFileText(filepath){
+        //returns a promise
+        return FileUtils.readAsText(new NativeFileSystem.FileEntry(filepath));
     }
-    
-    function loadCompareFile(){
-        NativeFileSystem.showOpenDialog( false, false, "Choose a file...", " ", null, 
-            function(data){
-                var filepath = data[0];
-                reloadCodeMirror(textArea, contentModes[FileUtils.getFileExtension(filepath)]);
-                FileUtils.readAsText(new NativeFileSystem.FileEntry(filepath))
-                    .then(function(textContent){
-                        if(comparePanel && compareEditor){
-                            comparePanel.show();
-                            compareHeader.text( " brackets-compare : " + filepath + " ");
-                            compareEditor.setValue(textContent);
-                            compareEditor.markText({line: 32, ch: 10 },{ line: 32, ch: 20 }, {
-                                className: "present"
-                            });
-                        }
-                    }, function(err){
-                        console.log(err);
-                    });
-            }, function(err){
-                console.log(err);
+       
+    function markChangesInEditors(bracketsEditor, codeMirrorEditor){
+        console.log(bracketsEditor.document.getText() == codeMirrorEditor.getValue());
+       comparse.parse(bracketsEditor.document.getText(), codeMirrorEditor.getValue(), comparseOptions)
+            .forEach(function(change){
+                codeMirrorEditor.markText(
+                    { line: change.line , ch: change.after.startpos },
+                    { line: change.line , ch: change.after.endpos + 1 }, 
+                    { className: change.change });
+                console.log(change);
             });
     }
     
+    function getFileExtension(filepath){
+        return FileUtils.getFileExtension(filepath);
+    }
+    function reloadEditor(area, mode){
+        if(editor){ editor.toTextArea(); }
+        editor = loadEditor(area, mode, "97.55%");
+    }
+    
+    function loadEditor(area, mode, size){
+        var e = CodeMirror.fromTextArea(area, { mode: mode, lineNumbers: true, lineWrapping: true });
+        e.setSize(null, size); 
+        return e;
+    }
+    
+    function openDialog(onError, onSuccess){
+        NativeFileSystem.showOpenDialog( 
+            false, false, "Choose a file...", " ", null,
+            function(data){ 
+                onSuccess(data[0]); 
+            },
+            function(err){ 
+                onError(err); 
+            });
+    }
+    
+    function saveEditor(){
+    
+    }
+    
+    function load(){            
+        openDialog(logError, function(filepath){
+            reloadEditor(area, modes[getFileExtension(filepath)]);
+            readFileText(filepath)
+                .then(function(text){
+                    panel.show();
+                    header.text(filepath);
+                    editor.setValue(text);
+                    markChangesInEditors(EditorManager.getActiveEditor(), editor)
+                }, logError);
+        });
+    }
+    
     // First, register a command - a UI-less object associating an id to a handler
-    var COMPARE_COMMAND_ID = "compare.openFileDialog";   // package-style naming to avoid collisions
-    CommandManager.register("Compare with... ", COMPARE_COMMAND_ID, loadCompareFile);
+    // package-style naming to avoid collisions
+    CommandManager.register(COMPARE_COMMAND_TEXT, COMPARE_COMMAND_ID, load);
 
     // Then create a menu item bound to the command
     // The label of the menu item is the name we gave the command (see above)
-    var projectCnxtMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
-    var workingSetCnxtMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
+    prjContextMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
+    wsContextMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
     
-    projectCnxtMenu.addMenuDivider();
-    projectCnxtMenu.addMenuItem(COMPARE_COMMAND_ID);
+    prjContextMenu.addMenuDivider();
+    prjContextMenu.addMenuItem(COMPARE_COMMAND_ID);
     
-    workingSetCnxtMenu.addMenuDivider();
-    workingSetCnxtMenu.addMenuItem(COMPARE_COMMAND_ID);
+    wsContextMenu.addMenuDivider();
+    wsContextMenu.addMenuItem(COMPARE_COMMAND_ID);
     
-    exports.loadCompareFile = loadCompareFile;
+    exports.load = load;
 });
 
 

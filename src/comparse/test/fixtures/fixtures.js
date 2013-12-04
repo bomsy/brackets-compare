@@ -1,4 +1,18 @@
 module.exports = exports = {
+    // Fixtures for testing the options
+    zeroLineIndex: {
+        before: '',
+        after: ''
+    },
+    zeroCharIndex: {
+        before: '',
+        after: ''
+    },
+    returnBoolean: {
+        before: '',
+        after: ''
+    },
+    // Fixtures for content testing
     added: {
        before: 'foo',
        after: 'foo bar'
