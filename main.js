@@ -3,7 +3,9 @@
 
 /** Simple extension that adds a "File > Hello World" menu item. Inserts "Hello, world!" at cursor pos. */
 define(function (require, exports, module) {
+    
     "use strict";
+    
     var PanelManager        = brackets.getModule("view/PanelManager"),
         CommandManager      = brackets.getModule("command/CommandManager"),
         EditorManager       = brackets.getModule("editor/EditorManager"),
@@ -14,125 +16,162 @@ define(function (require, exports, module) {
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         FileUtils           = brackets.getModule("file/FileUtils");
     
-    var comparse            = require("src/comparse/comparse"),
+    var compareBridge       = require("diff-bridge"),
         comparseOptions     = {
             zeroLineIndex : true,
             zeroCharIndex : true
         };
     
     var panel  = null,
-        area   = null,
+        mArea   = null,
+        cArea   = null, 
         editor = null,
-        header = null,
-        
+        $mainHeader = null,
+        $compareHeader = null,        
         modes = {
             html: "text/html",
             css : "css",
             js  : "javascript"
         },
-        MARKUP = "<div id='brackets-compare' class='brackets-compare bottom-panel'><span id='compare-header' class='title'> file.js </span><textarea id='compare-textarea' ></textarea></div>",
-        
-        prjContextMenu = null,
-        wsContextMenu = null,
-        
-        COMPARE_COMMAND_ID = "compare.openFileDialog",
-        COMPARE_COMMAND_TEXT = "Compare with... ",
-        COMPARE_COMMAND_PANEL = "compare.comparefile";
+        markup = "<div id='compare-panel' class='panel bottom-panel'> \
+                    <div id='m-header' class='headers'> file.js </div> \
+                    <textarea id='m-area' ></textarea> \
+                    <div id='c-header' class='headers'> file.js </div> \
+                    <textarea id='c-area' > </textarea> \
+                 </div>",
+            
+        prjMenu = null,
+        wsMenu = null,        
+        compare_command_id = "compare.openFileDialog",
+        compare_command_text = "Compare with... ",
+        compare_command_panel = "compare.comparefile";
     
-    AppInit.htmlReady(function () {
-        // Load stylesheet
-        ExtensionUtils.loadStyleSheet(module, "compare.css");
+    panel = PanelManager.createBottomPanel(compare_command_panel, $(markup), 500);
+    
+    // Load stylesheet
+    ExtensionUtils.loadStyleSheet(module, "compare.css");
         
-        // Build the panel
-        panel = PanelManager.createBottomPanel(COMPARE_COMMAND_PANEL, $(MARKUP), 1000);
-        
-        area = document.querySelector("#compare-textarea");
-        header = $("#compare-header");
-        
-        $(DocumentManager).on("currentDocumentChange", function(){
-            panel.hide();
-        });
+    // Build the panel
+    $mainHeader = $("#m-header");
+    $compareHeader = $("c-header");
+    
+    mArea = document.querySelector("#m-area");
+    cArea = document.querySelector("#c-area");
+       
+    // Events
+    $(DocumentManager).on("currentDocumentChange", function(){
+        panel.hide();
+        editor.mainEditor.toTextArea();
+        editor.compareEditor.toTextArea();
     });
     
-    function logError(err){
+    var logErrors = function(err){
         console.log(err);
-    }
+    };
     
-    function readFileText(filepath){
-        //returns a promise
-        return FileUtils.readAsText(new NativeFileSystem.FileEntry(filepath));
-    }
-       
-    function markChangesInEditors(bracketsEditor, codeMirrorEditor){
-        console.log(bracketsEditor.document.getText() == codeMirrorEditor.getValue());
-       comparse.parse(bracketsEditor.document.getText(), codeMirrorEditor.getValue(), comparseOptions)
-            .forEach(function(change){
-                codeMirrorEditor.markText(
-                    { line: change.line , ch: change.after.startpos },
-                    { line: change.line , ch: change.after.endpos + 1 }, 
-                    { className: change.change });
-                console.log(change);
-            });
-    }
+    var read = function (path){
+        return FileUtils.readAsText(new NativeFileSystem.FileEntry(path));
+    };
     
-    function getFileExtension(filepath){
-        return FileUtils.getFileExtension(filepath);
-    }
-    function reloadEditor(area, mode){
-        if(editor){ editor.toTextArea(); }
-        editor = loadEditor(area, mode, "97.55%");
-    }
+    var openDialog = function (onError, onSuccess){
+        NativeFileSystem.showOpenDialog( false, false, "Choose a file...", " ", null,
+            function(data){ onSuccess(data[0]); },
+            function(err){ onError(err); });
+    };
     
-    function loadEditor(area, mode, size){
-        var e = CodeMirror.fromTextArea(area, { mode: mode, lineNumbers: true, lineWrapping: true });
-        e.setSize(null, size); 
-        return e;
-    }
+    var extension = function(path){
+        return FileUtils.getFileExtension(path);
+    };
     
-    function openDialog(onError, onSuccess){
-        NativeFileSystem.showOpenDialog( 
-            false, false, "Choose a file...", " ", null,
-            function(data){ 
-                onSuccess(data[0]); 
-            },
-            function(err){ 
-                onError(err); 
-            });
-    }
+    var reload = function(area, area2, mode){
+        /*if(editor){ 
+            editor.m.toTextArea(); 
+            editor.c.toTextArea();
+        }*/
+        editor = create(area, area2, mode, "50%");
+    };
     
-    function saveEditor(){
-    
-    }
-    
-    function load(){            
-        openDialog(logError, function(filepath){
-            reloadEditor(area, modes[getFileExtension(filepath)]);
-            readFileText(filepath)
-                .then(function(text){
-                    panel.show();
-                    header.text(filepath);
-                    editor.setValue(text);
-                    markChangesInEditors(EditorManager.getActiveEditor(), editor)
-                }, logError);
+    var create = function(area, area2, mode, size){
+        var e = CodeMirror.fromTextArea(area, { 
+            theme: 'docs',
+            mode: mode, 
+            lineNumbers: true, 
+            lineWrapping: true 
         });
+        var f = CodeMirror.fromTextArea(area2, { 
+            theme: 'docs',
+            mode: mode, 
+            lineNumbers: true, 
+            lineWrapping: true 
+        });
+        //e.setSize(size, size); 
+        //f.setSize(size,size);
+        return {
+            mainEditor: e,
+            compareEditor: f
+        };
     }
+    var show = function(area, text){
+        area.setValue(text);
+    }
+    var compare = function(content1, content2){
+        //return compareBridge.compare(bracketsEditor.document.getText(),codeMirrorEditor.getValue());
+        return compareBridge.compare(content1, content2);
+    };
     
-    // First, register a command - a UI-less object associating an id to a handler
-    // package-style naming to avoid collisions
-    CommandManager.register(COMPARE_COMMAND_TEXT, COMPARE_COMMAND_ID, load);
+    var mark = function (view1, view2, changes){
+        console.log(changes);
+        changes.forEach(function(change){
+            if(change){
+                view1.markText({ line: change.old.startLine , ch: change.old.startPos - 1 },
+                    { line: change.old.endLine , ch: change.old.endPos }, 
+                    { className: change.state });
+                
+                view2.markText({ line: change.new.startLine , ch: change.new.startPos - 1 },
+                    { line: change.new.endLine , ch: change.new.endPos }, 
+                    { className: change.state });
+            }
+        });
+    };
+    
+    //initiates the process
+    var run = function(){            
+        openDialog(logErrors, function(filepath){
+            reload(mArea, cArea, modes[extension(filepath)]);
+            read(filepath)
+            .then(function(text){
+                var changes;
+                panel.show();
+                $header.text(filepath);
+                show(editor.m, EditorManager.getActiveEditor().document.getText());
+                show(editor.c,  text);
+                changes = compare(editor.m.getValue(), editor.c.getValue());
+                mark(editor.m, editor.c, changes)
+            }, logErrors);
+        });
+    };
+    
 
-    // Then create a menu item bound to the command
-    // The label of the menu item is the name we gave the command (see above)
-    prjContextMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
-    wsContextMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
     
-    prjContextMenu.addMenuDivider();
-    prjContextMenu.addMenuItem(COMPARE_COMMAND_ID);
     
-    wsContextMenu.addMenuDivider();
-    wsContextMenu.addMenuItem(COMPARE_COMMAND_ID);
+
     
-    exports.load = load;
+
+    
+    // Register a command 
+    CommandManager.register(compare_command_text, compare_command_id, run);
+
+    // Create menus bound to the command
+    prjMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
+    wsMenu  = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
+    
+    prjMenu.addMenuDivider();
+    wsMenu.addMenuDivider();
+    
+    prjMenu.addMenuItem(compare_command_id);
+    wsMenu.addMenuItem(compare_command_id);
+    
+    exports.run = run;
 });
 
 
