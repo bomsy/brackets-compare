@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         DocumentManager     = brackets.getModule("document/DocumentManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         AppInit             = brackets.getModule("utils/AppInit"),
-        NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
+        NativeFileSystem          = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         FileUtils           = brackets.getModule("file/FileUtils");
     
     var compareBridge       = require("diff-bridge"),
@@ -53,17 +53,19 @@ define(function (require, exports, module) {
         
     // Build the panel
     $mainHeader = $("#m-header");
-    $compareHeader = $("c-header");
+    $compareHeader = $("#c-header");
     
     mArea = document.querySelector("#m-area");
     cArea = document.querySelector("#c-area");
        
     // Events
-    $(DocumentManager).on("currentDocumentChange", function(){
-        panel.hide();
-        editor.mainEditor.toTextArea();
-        editor.compareEditor.toTextArea();
-    });
+    /*$(DocumentManager).on("currentDocumentChange", function(){
+        if(panel){ panel.hide(); }
+        if(editor){
+            editor.main.toTextArea();
+            editor.compare.toTextArea();
+        }
+    });*/
     
     var logErrors = function(err){
         console.log(err);
@@ -88,6 +90,7 @@ define(function (require, exports, module) {
             editor.m.toTextArea(); 
             editor.c.toTextArea();
         }*/
+        console.log(mode);
         editor = create(area, area2, mode, "50%");
     };
     
@@ -107,8 +110,8 @@ define(function (require, exports, module) {
         //e.setSize(size, size); 
         //f.setSize(size,size);
         return {
-            mainEditor: e,
-            compareEditor: f
+            main: e,
+            compare: f
         };
     }
     var show = function(area, text){
@@ -142,11 +145,19 @@ define(function (require, exports, module) {
             .then(function(text){
                 var changes;
                 panel.show();
-                $header.text(filepath);
-                show(editor.m, EditorManager.getActiveEditor().document.getText());
-                show(editor.c,  text);
-                changes = compare(editor.m.getValue(), editor.c.getValue());
-                mark(editor.m, editor.c, changes)
+                    $(DocumentManager).on("currentDocumentChange", function(){
+                        if(panel){ panel.hide(); }
+                        if(editor){
+                            editor.main.toTextArea();
+                            editor.compare.toTextArea();
+                        }
+                    });
+                $mainHeader.text(filepath);
+                $compareHeader.text(filepath)
+                show(editor.main, EditorManager.getActiveEditor().document.getText());
+                show(editor.compare,  text);
+                changes = compare(editor.main.getValue(), editor.compare.getValue());
+                mark(editor.main, editor.compare, changes)
             }, logErrors);
         });
     };
@@ -158,7 +169,7 @@ define(function (require, exports, module) {
     
 
     
-    // Register a command 
+   // Register a command 
     CommandManager.register(compare_command_text, compare_command_id, run);
 
     // Create menus bound to the command
