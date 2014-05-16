@@ -1,0 +1,13 @@
+#compare-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+#compare-panel .compare-editor {
+    border: 1px red solid;
+}
+#compare-panel .compare-status {
+    border: 1px green solid;
+}
