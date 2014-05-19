@@ -1,13 +1,16 @@
 #compare-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
 }
 #compare-panel .compare-editor {
-    border: 1px red solid;
+    height: 50%;
+    box-shadow: 2px 2px 5px #888888;
 }
 #compare-panel .compare-status {
-    border: 1px green solid;
+
+}
+
+.cm-s-default {
+    text-shadow: none;
+    border-top: 1px dashed #ccc;   
+    height: 100%;
 }

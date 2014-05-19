@@ -7,9 +7,9 @@ define(function (require, exports, module) {
     
     var templateString = "<div class='compare-editor'>\
                             <textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>\
-                            <div id='' class='compare-status'> {{ title }} </div> \
+                            <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
-    function Editor(options) {
+    function View(options) {
         this.id = options.id;
         this.title = options.title;
         this.text = options.text;
@@ -21,12 +21,18 @@ define(function (require, exports, module) {
         this.initialize();
     };
     
-    Editor.prototype.initialize = function() {
+    View.modes = {
+        html : "text/html",
+        css  : "css",
+        js   : "javascript" 
+    };
+    
+    View.prototype.initialize = function() {
         this.load = this.load.bind(this);
         this.render = this.render.bind(this);
     };
     
-    Editor.prototype.load = function() {
+    View.prototype.load = function() {
        this.cm = CodeMirror.fromTextArea(document.querySelector("#" + this.id + "-area"), {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
@@ -34,15 +40,15 @@ define(function (require, exports, module) {
         });
     };
     
-    Editor.prototype.refresh = function() {
+    View.prototype.refresh = function() {
         if (this.cm) {
             this.cm.refresh();
         }
     };
     
-    Editor.prototype.render = function() {
+    View.prototype.render = function() {
         return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text });
     };
     
-    exports.CompareEditor = Editor;
+    exports.CompareView = View;
 });
