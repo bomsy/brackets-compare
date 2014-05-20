@@ -58,13 +58,6 @@ define(function (require, exports, module) {
                 text: _currentDoc.getText(),
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)]
             });
-            
-            var cx = new CompareView({
-                id: "cx",
-                title: "michelin.js",
-                text: "asfasdfasdfasdf",
-                mode: CompareView.MODES["js"]
-            });
             panel.addView(mx);
             
             fsShowOpenDialog( false, false, "Choose a file...", "", "")
