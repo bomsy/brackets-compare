@@ -9,27 +9,34 @@ define(function (require, exports, module) {
                             <textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>\
                             <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
+    
     function View(options) {
         this.id = options.id;
-        this.title = options.title;
-        this.text = options.text;
+        this.title = options.title || "";
+        this.text = options.text || "";
         this.lineNumbers = options.lineNumbers || true;
         this.lineWrapping = options.lineWrapping || true;
-        this.mode = options.mode || "javascript";
+        this.mode = options.mode || View.MODES["js"];
         this.cm = null; // Codemirror instance
+        
+        this.initialize = this.initialize.bind(this);
+        this.load   = this.load.bind(this);
+        this.refresh = this.refresh.bind(this);
+        this.setText = this.setText.bind(this);
+        this.getText = this.getText.bind(this);
+        this.render = this.render.bind(this);
         
         this.initialize();
     };
     
-    View.modes = {
+    View.MODES = {
         html : "text/html",
         css  : "css",
         js   : "javascript" 
     };
     
     View.prototype.initialize = function() {
-        this.load = this.load.bind(this);
-        this.render = this.render.bind(this);
+        this.setText(this.text);
     };
     
     View.prototype.load = function() {
@@ -44,6 +51,26 @@ define(function (require, exports, module) {
         if (this.cm) {
             this.cm.refresh();
         }
+    };
+    
+    View.prototype.setText = function(text) {
+        if (this.cm) {
+            this.cm.setValue(this.text = text);
+        }
+    };
+    
+    View.prototype.getText = function() {
+        return this.cm ? this.cm.getValue() : "";      
+    };
+    
+    View.prototype.destroy = function() {
+        this.id = null;
+        this.cm = null;
+        this.text = "";
+        this.lineNumbers = true;
+        this.lineWrapping = true;
+        this.mode = View.MODES["js"];
+        
     };
     
     View.prototype.render = function() {

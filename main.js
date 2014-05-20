@@ -8,6 +8,7 @@ define(function (require, exports, module) {
         ExtensionUtils   =   brackets.getModule("utils/ExtensionUtils"),
         CommandManager   =   brackets.getModule("command/CommandManager"),
         DocumentManager  =   brackets.getModule("document/DocumentManager"),
+        EditorManager    =   brackets.getModule("editor/EditorManager"),
         Menus            =   brackets.getModule("command/Menus"),
         FileSystem       =   brackets.getModule("filesystem/FileSystem"),
         FileUtils        =   brackets.getModule("file/FileUtils"),
@@ -18,46 +19,85 @@ define(function (require, exports, module) {
         CompareView = require("js/CompareView").CompareView;
     
     AppInit.appReady(function() {
+        
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
         
-        var helpMenu = Menus.getMenu(Menus.AppMenuBar.HELP_MENU);
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
         var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
         
-        var panel = new ComparePanel({});
+        //wrapper around FileSystem.showOpenDialog which returns a promise instead.
+        function fsShowOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
+            var result = new $.Deferred();
+            FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
+                function(err, data) {
+                    if(!err) {
+                        result.resolve(data[0]);
+                    } else {
+                        result.reject(err)
+                    }
+                });
+            return result.promise();
+        }
+         
         
-        var e1 = new CompareView({
-            id: "mx",
-            title: "michelin.js",
-            text: "asdfa asdasdasda  asdfas"
-        });
+        var panel = null;
         
-        var e2 = new CompareView({
-            id: "cx",
-            title: "asdf.js",
-            text: "atdatatsda asasd asdas"
-        });
-        
-        panel.addView(e1);
-        panel.addView(e2);
-        panel.load();
-        
-        // Command register
+        // Command register  
         CommandManager.register(COMPARE_CMD_TEXT, COMPARE_CMD_ID, function() {
-            panel.show();
-            FileSystem.showOpenDialog( 
-                false,
-                false,
-                "Choose a file...",
-                "",
-                null,
-                function(data) { console.log(data); },
-                function(err) { });
+            if(panel !== null) {
+                panel.destroy();
+            }
+            panel = new ComparePanel({});
+            
+            var _currentDoc = DocumentManager.getCurrentDocument();
+            var extFile = null;
+            
+            var mx = new CompareView({
+                id: "mx",
+                title: _currentDoc.file.name,
+                text: _currentDoc.getText(),
+                mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)]
+            });
+            
+            var cx = new CompareView({
+                id: "cx",
+                title: "michelin.js",
+                text: "asfasdfasdfasdf",
+                mode: CompareView.MODES["js"]
+            });
+            panel.addView(mx);
+            
+            fsShowOpenDialog( false, false, "Choose a file...", "", "")
+            .then(function(path) {
+                var r = new $.Deferred();
+                extFile = FileSystem.getFileForPath(path);
+                if (extFile) {
+                    r.resolve(extFile);
+                } else {
+                    r.reject(err);
+                }
+                return r.promise();
+            })
+            .then(FileUtils.readAsText)
+            .then(function(text) {
+                var cx = new CompareView({
+                    id: "cx",
+                    title: extFile.name,
+                    text: text,
+                    mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)]
+                });
+                
+                panel.addView(cx);
+                panel.load();
+                panel.show();
+            });
         });
         
         // Events
         $(DocumentManager).on("currentDocumentChange", function() {
-            panel.hide();    
+            if(panel !== null) {
+                panel.destroy();    
+            }
         });
         
         // Menus
@@ -66,8 +106,6 @@ define(function (require, exports, module) {
         
         workingSetMenu.addMenuDivider();
         workingSetMenu.addMenuItem(COMPARE_CMD_ID);
-        
-        helpMenu.addMenuItem(COMPARE_CMD_ID);
     });
 });
 

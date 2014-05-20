@@ -43,10 +43,7 @@ define(function (require, exports, module) {
         this.pane = null;
         this.$el = null;
         this.parent = null;
-        this.initialize();
-    };
-    
-    Panel.prototype.initialize = function() {
+        
         this.addView = this.addView.bind(this);
         this.loadViews = this.loadViews.bind(this);
         this.renderViews = this.renderViews.bind(this);
@@ -54,14 +51,24 @@ define(function (require, exports, module) {
         this.load = this.load.bind(this);
         this.show = this.show.bind(this);
         this.hide = this.hide.bind(this);
+        this.remove = this.remove.bind(this);
+        this.destroy = this.destroy.bind(this);
+        this.onResize = this.onResize.bind(this);
         this.bindEvents = this.bindEvents.bind(this);
+        
+        this.initialize();
+    };
+    
+    Panel.prototype.initialize = function() {
+
+    };
+    
+    Panel.prototype.onResize = function()  {
+        _setHeight(this.$el);
     };
     
     Panel.prototype.bindEvents = function() {
-        var self = this;
-        window.addEventListener("resize", function() {
-            _setHeight(self.$el);    
-        });
+        window.addEventListener("resize", this.onResize);
     };
     
     Panel.prototype.loadViews = function() {
@@ -97,6 +104,12 @@ define(function (require, exports, module) {
         this.bindEvents();
     };
     
+    Panel.prototype.remove = function() {
+        if( this.$el) {
+            this.$el.remove();
+        }
+    };
+    
     Panel.prototype.show = function() {
         if (this.pane) {
             _hideEditor(); 
@@ -105,6 +118,21 @@ define(function (require, exports, module) {
             this.refreshViews();
         }
     };
+    
+    Panel.prototype.destroy = function() {
+        this.hide();
+        window.removeEventListener("resize", this.onResize);
+        for (var i = 0, len = this.views.length; i < len; i++) {
+            this.views[i].destroy(); 
+        }
+        
+        this.remove();
+        this.views = [];
+        this.$el = null;
+        this.parent = null;
+        this.pane = null;
+    };
+    
     Panel.prototype.hide = function() {
         if (this.pane) {
             _showEditor();
