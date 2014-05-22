@@ -36,12 +36,6 @@ define(function (require, exports, module) {
         js   : "javascript" 
     };
     
-    View.markers = {
-        added: "added",
-        removed: "removed",
-        replaced: "replaced"
-    };
-    
     View.prototype.initialize = function() {
         this.setText(this.text);
     };
@@ -51,13 +45,6 @@ define(function (require, exports, module) {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
             lineWrapping: this.lineWrapping
-        });
-    };
-    
-    View.prototype.markText = function(from, to, options) {
-        this.cm.markText(from, to, {
-            className: options.className,
-            title: options.title || ""
         });
     };
     
@@ -91,5 +78,5 @@ define(function (require, exports, module) {
         return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text });
     };
     
-    exports.CompareView = View;
+    exports.CompareView = Viewer;
 });

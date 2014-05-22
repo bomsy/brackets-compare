@@ -12,18 +12,27 @@ define(function (require, exports, module) {
         Menus            =   brackets.getModule("command/Menus"),
         FileSystem       =   brackets.getModule("filesystem/FileSystem"),
         FileUtils        =   brackets.getModule("file/FileUtils"),
+        NodeDomain       =   brackets.getModule("utils/NodeDomain"),
         COMPARE_CMD_ID   =   "start.compare",
         COMPARE_CMD_TEXT =   "Compare with...";
     
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
+
     
     AppInit.appReady(function() {
-        
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
+        var mx = null , 
+            cx = null,
+            panel = null;
+        
+        var workerPath = ExtensionUtils.getModulePath(module, "js/worker/compare-worker.js")
+        var worker = new Worker(workerPath);
         
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
         var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
+        
+        
         
         //wrapper around FileSystem.showOpenDialog which returns a promise instead.
         function fsShowOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
@@ -38,9 +47,42 @@ define(function (require, exports, module) {
                 });
             return result.promise();
         }
+        
+        function markViews(diffs) {
+            console.log(diffs);
+            for (var i = 0; i < diffs.length; i++) {
+                if (diffs[i].status == -1) {
+                    mx.markText({
+                        line: diffs[i].startLine,
+                        ch: diffs[i].startChar
+                    }, {
+                        line: diffs[i].endLine,
+                        ch: diffs[i].startChar
+                    }, {
+                        className: CompareView.markers.removed,
+                        title: "removed"
+                    });
+                } else if (diffs[i].status == 1) {
+                    cx.markText({
+                        line: diffs[i].startLine,
+                        ch: diffs[i].startChar
+                    }, {
+                        line: diffs[i].endLine,
+                        ch: diffs[i].startChar
+                    }, {
+                        className: CompareView.markers.added,
+                        title: "added"
+                    });
+                }
+            }
+        }
+        
+        function onWorkerMessage(e) {
+            markViews(e.data);
+        }
          
         
-        var panel = null;
+        
         
         // Command register  
         CommandManager.register(COMPARE_CMD_TEXT, COMPARE_CMD_ID, function() {
@@ -49,10 +91,13 @@ define(function (require, exports, module) {
             }
             panel = new ComparePanel({});
             
+            // Setup listener for worker
+            worker.addEventListener("message", onWorkerMessage, false);
+            
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
             
-            var mx = new CompareView({
+            mx = new CompareView({
                 id: "mx",
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
@@ -73,7 +118,7 @@ define(function (require, exports, module) {
             })
             .then(FileUtils.readAsText)
             .then(function(text) {
-                var cx = new CompareView({
+                cx = new CompareView({
                     id: "cx",
                     title: extFile.name,
                     text: text,
@@ -83,6 +128,12 @@ define(function (require, exports, module) {
                 panel.addView(cx);
                 panel.load();
                 panel.show();
+                
+                
+                worker.postMessage({
+                    text1: mx.getText(),
+                    text2: cx.getText()
+                });
             });
         });
         
@@ -91,6 +142,8 @@ define(function (require, exports, module) {
             if(panel !== null) {
                 panel.destroy();    
             }
+            // remove listener for worker
+            worker.removeEventListener("message", onWorkerMessage, false);
         });
         
         // Menus

@@ -36,12 +36,6 @@ define(function (require, exports, module) {
         js   : "javascript" 
     };
     
-    View.markers = {
-        added: "added",
-        removed: "removed",
-        replaced: "replaced"
-    };
-    
     View.prototype.initialize = function() {
         this.setText(this.text);
     };
@@ -51,13 +45,6 @@ define(function (require, exports, module) {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
             lineWrapping: this.lineWrapping
-        });
-    };
-    
-    View.prototype.markText = function(from, to, options) {
-        this.cm.markText(from, to, {
-            className: options.className,
-            title: options.title || ""
         });
     };
     
@@ -78,12 +65,6 @@ define(function (require, exports, module) {
     };
     
     View.prototype.destroy = function() {
-        this.id = null;
-        this.cm = null;
-        this.text = "";
-        this.lineNumbers = true;
-        this.lineWrapping = true;
-        this.mode = View.MODES["js"];
         
     };
     

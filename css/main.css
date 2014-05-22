@@ -1,16 +1,42 @@
 #compare-panel {
     position: relative;
 }
+
 #compare-panel .compare-editor {
     height: 50%;
     box-shadow: 2px 2px 5px #888888;
 }
+
 #compare-panel .compare-status {
 
 }
 
-.cm-s-default {
-    text-shadow: none;
-    border-top: 1px dashed #ccc;   
+#compare-panel .cm-s-default {
     height: 100%;
+}
+
+#cx-editor .cm-s-default {
+    border-top: 1px dashed #ccc; 
+}
+
+/* Markers */
+.added {
+    background-color: #CEFCEA;
+    //border-radius: 3px;
+    padding: 1px 1px 1px 1px;
+    color: #000;
+    width: 100%;
+}
+.removed {
+    background-color: #FCCEDB;
+    //border-radius: 3px;
+    padding: 1px 1px 1px 1px;
+    color: #000 ;
+    width: 100%
+}
+.replaced {
+    background-color: #FF9900;
+    border-radius: 3px;
+    padding: 0 3px 0 3px;
+    color: #fff ; 
 }
