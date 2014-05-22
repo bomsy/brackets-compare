@@ -68,4 +68,4 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         self.postMessage(transformedDiff);
     }, false);
     
-}(this.compare));
+}());
