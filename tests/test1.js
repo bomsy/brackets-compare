@@ -22,7 +22,6 @@ define(function (require, exports, module) {
         
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
-        this.refresh = this.refresh.bind(this);
         this.setText = this.setText.bind(this);
         this.getText = this.getText.bind(this);
         this.render = this.render.bind(this);
@@ -43,8 +42,7 @@ define(function (require, exports, module) {
     View.prototype.load = function() {
        this.cm = CodeMirror.fromTextArea(document.querySelector("#" + this.id + "-area"), {
             mode: this.mode,
-            lineNumbers: this.lineNumbers,
-            lineWrapping: this.lineWrapping
+            lineNumbers: this.lineNumbers
         });
     };
     
@@ -65,7 +63,7 @@ define(function (require, exports, module) {
     };
     
     View.prototype.destroy = function() {
-        
+        this.destroy();
     };
     
     View.prototype.render = function() {

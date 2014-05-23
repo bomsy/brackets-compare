@@ -10,6 +10,14 @@ define(function (require, exports, module) {
                             <textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>\
                             <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
+    var CODEMIRRORLINEOFFSET = -1;
+    
+    function makeMarker(color) {
+      var marker = document.createElement("div");
+      marker.style.color = color;
+      marker.innerHTML = " o ";
+      return marker;
+    }
     
     function View(options) {
         this.id = options.id;
@@ -26,6 +34,7 @@ define(function (require, exports, module) {
         this.setText = this.setText.bind(this);
         this.getText = this.getText.bind(this);
         this.render = this.render.bind(this);
+        this.markGutter = this.markGutter.bind(this);
         
         this.initialize();
     };
@@ -37,9 +46,18 @@ define(function (require, exports, module) {
     };
     
     View.markers = {
-        added: "added",
-        removed: "removed",
-        replaced: "replaced"
+        added: {
+            className: "added",
+            color: "#87FED0"
+        },
+        addedChars: "added-chars",
+        removed: {
+            className: "removed",
+            color: "#FF759C"
+        },
+        removedChars: "removed-chars",
+        replaced: "replaced",
+        replacedChars: "replaced-chars"
     };
     
     View.prototype.initialize = function() {
@@ -50,14 +68,38 @@ define(function (require, exports, module) {
        this.cm = CodeMirror.fromTextArea(document.querySelector("#" + this.id + "-area"), {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
-            lineWrapping: this.lineWrapping
+            lineWrapping: this.lineWrapping,
+            gutters: ["CodeMirror-linenumbers", "compares"]
         });
     };
     
-    View.prototype.markText = function(from, to, options) {
-        this.cm.markText(from, to, {
-            className: options.className,
-            title: options.title || ""
+    View.prototype.markLine = function(line, className) {
+        this.cm.addLineClass(line, "background", className);
+    };
+    
+    View.prototype.markGutter = function(line, color) {
+        var info = this.cm.lineInfo(line);
+        this.cm.setGutterMarker(line, "compares", info.gutterMarkers ? null : makeMarker(color));  
+    };
+    
+    View.prototype.markLines = function(from, to, marker) {
+        var i = from;
+        while(i <= to) {
+            this.markGutter(i + CODEMIRRORLINEOFFSET, marker.color);
+            this.markLine(i + CODEMIRRORLINEOFFSET, marker.className); 
+            i++
+        }
+    };
+    
+    View.prototype.markChars = function(from, to , className) {
+        this.cm.markText({
+            line: from.line + CODEMIRRORLINEOFFSET,
+            ch: from.ch
+        }, {
+            line: to.line + CODEMIRRORLINEOFFSET,
+            ch: from.ch
+        }, {
+            className: className
         });
     };
     

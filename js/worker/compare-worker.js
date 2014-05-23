@@ -25,17 +25,42 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
     }
     
     function diff_transform(diffs) {
-        var transformDiffs = [];
-        var prevLastline = 0;
-        var meta;
+        var oldDiffs = [];
+        var newDiffs = [];
+        var oldPrevLastLine = 0;
+        var newPrevLastLine = 0;
+        var oldData;
+        var newData;
         for(var i = 0; i < diffs.length; i++) {
-            meta = getMetadata(diffs[i][1], prevLastline);
-            prevLastline = meta.endLine;
-            meta.status = diffs[i][0];
-            meta.text = diffs[i][1];
-            transformDiffs.push(meta);
+            if (diffs[i][0] == -1) {
+                oldData = getMetadata(diffs[i][1], oldPrevLastLine);
+                oldPrevLastLine = oldData.endLine;
+                oldData.status = diffs[i][0];
+                oldData.text = diffs[i][1];
+                oldDiffs.push(oldData);
+            } else if (diffs[i][0] == 1) {
+                newData = getMetadata(diffs[i][1], newPrevLastLine);
+                newPrevLastLine = newData.endLine;
+                newData.status = diffs[i][0];
+                newData.text = diffs[i][1];
+                newDiffs.push(newData);
+            } else {
+                oldData = getMetadata(diffs[i][1], oldPrevLastLine);
+                newData = getMetadata(diffs[i][1], newPrevLastLine);
+                oldPrevLastLine = oldData.endLine;
+                newPrevLastLine = newData.endLine;
+                oldData.status = diffs[i][0];
+                oldData.text = diffs[i][1];
+                newData.status = diffs[i][0];
+                newData.text = diffs[i][1];
+                //oldDiffs.push(oldData);
+                //newDiffs.push(newData);
+            }
         }
-        return transformDiffs;
+        return {
+            "old": oldDiffs,
+            "new": newDiffs
+        }
     }
     
     function getMetadata(diffText, prevContentLastLine) {
@@ -64,8 +89,8 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
     self.addEventListener("message", function(e) {
         var data = e.data;
         var diffs = diff_lineMode(data.text1, data.text2);
-        var transformedDiff = diff_transform(diffs);
-        self.postMessage(transformedDiff);
+        diffs = diff_transform(diffs);
+        self.postMessage(diffs);
     }, false);
     
 }());

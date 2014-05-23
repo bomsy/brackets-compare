@@ -11,6 +11,7 @@ define(function (require, exports, module) {
                             <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
     
+    
     function View(options) {
         this.id = options.id;
         this.title = options.title || "";
@@ -33,7 +34,7 @@ define(function (require, exports, module) {
     View.MODES = {
         html : "text/html",
         css  : "css",
-        js   : "javascript" 
+        js   : "php" 
     };
     
     View.prototype.initialize = function() {
@@ -43,7 +44,6 @@ define(function (require, exports, module) {
     View.prototype.load = function() {
        this.cm = CodeMirror.fromTextArea(document.querySelector("#" + this.id + "-area"), {
             mode: this.mode,
-            lineNumbers: this.lineNumbers,
             lineWrapping: this.lineWrapping
         });
     };

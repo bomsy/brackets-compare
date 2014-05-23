@@ -22,8 +22,8 @@ define(function (require, exports, module) {
     
     AppInit.appReady(function() {
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
-        var mx = null , 
-            cx = null,
+        var oldView = null , 
+            newView = null,
             panel = null;
         
         var workerPath = ExtensionUtils.getModulePath(module, "js/worker/compare-worker.js")
@@ -49,31 +49,13 @@ define(function (require, exports, module) {
         }
         
         function markViews(diffs) {
-            console.log(diffs);
-            for (var i = 0; i < diffs.length; i++) {
-                if (diffs[i].status == -1) {
-                    mx.markText({
-                        line: diffs[i].startLine,
-                        ch: diffs[i].startChar
-                    }, {
-                        line: diffs[i].endLine,
-                        ch: diffs[i].startChar
-                    }, {
-                        className: CompareView.markers.removed,
-                        title: "removed"
-                    });
-                } else if (diffs[i].status == 1) {
-                    cx.markText({
-                        line: diffs[i].startLine,
-                        ch: diffs[i].startChar
-                    }, {
-                        line: diffs[i].endLine,
-                        ch: diffs[i].startChar
-                    }, {
-                        className: CompareView.markers.added,
-                        title: "added"
-                    });
-                }
+            var replacedLines = {};
+            for (var i = 0; i < diffs.old.length; i++) {
+                oldView.markLines( diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
+            }
+            console.log(replacedLines);
+            for (var j = 0; j < diffs.new.length; j++) {
+                newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
             }
         }
         
@@ -97,13 +79,13 @@ define(function (require, exports, module) {
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
             
-            mx = new CompareView({
-                id: "mx",
+            oldView = new CompareView({
+                id: "old-viewer",
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)]
             });
-            panel.addView(mx);
+            panel.addView(oldView);
             
             fsShowOpenDialog( false, false, "Choose a file...", "", "")
             .then(function(path) {
@@ -118,21 +100,21 @@ define(function (require, exports, module) {
             })
             .then(FileUtils.readAsText)
             .then(function(text) {
-                cx = new CompareView({
-                    id: "cx",
+                newView = new CompareView({
+                    id: "new-viewer",
                     title: extFile.name,
                     text: text,
                     mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)]
                 });
                 
-                panel.addView(cx);
+                panel.addView(newView);
                 panel.load();
                 panel.show();
                 
                 
                 worker.postMessage({
-                    text1: mx.getText(),
-                    text2: cx.getText()
+                    text1: oldView.getText(),
+                    text2: newView.getText()
                 });
             });
         });
