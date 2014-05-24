@@ -13,3 +13,4 @@ Todo
 * Remove gutter markers for now
 * Vertical & Horzontal view layout options
 * Cleanup code
+* Auto-scrolling views
