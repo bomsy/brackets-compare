@@ -8,9 +8,10 @@ UNDER DEVELOPMENT
 Todo
 
 * Setup tests
-* Word markers
+* Add markers (lines) to show location of previous content
+* Word markers ???
 * Live diff updates on content change
-* Remove gutter markers for now
+* Change gutter markers to + and -
 * Vertical & Horzontal view layout options
 * Cleanup code
-* Auto-scrolling views
+* Auto-scrolling views - Look at Code mirror viewportChange event
