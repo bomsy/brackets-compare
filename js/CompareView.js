@@ -12,10 +12,10 @@ define(function (require, exports, module) {
                          </div>";
     var CODEMIRRORLINEOFFSET = -1;
     
-    function makeMarker(color) {
+    function makeMarker(color, content) {
       var marker = document.createElement("div");
       marker.style.color = color;
-      marker.innerHTML = " o ";
+      marker.innerHTML = content;
       return marker;
     }
     
@@ -48,16 +48,16 @@ define(function (require, exports, module) {
     View.markers = {
         added: {
             className: "added",
-            color: "#87FED0"
+            color: "#00784A",
+            value: "+"
         },
         addedChars: "added-chars",
         removed: {
             className: "removed",
-            color: "#FF759C"
+            color: "#8E0028",
+            value: "-"
         },
-        removedChars: "removed-chars",
-        replaced: "replaced",
-        replacedChars: "replaced-chars"
+        removedChars: "removed-chars"
     };
     
     View.prototype.initialize = function() {
@@ -77,15 +77,15 @@ define(function (require, exports, module) {
         this.cm.addLineClass(line, "background", className);
     };
     
-    View.prototype.markGutter = function(line, color) {
+    View.prototype.markGutter = function(line, color, value) {
         var info = this.cm.lineInfo(line);
-        this.cm.setGutterMarker(line, "compares", info.gutterMarkers ? null : makeMarker(color));  
+        this.cm.setGutterMarker(line, "compares", info.gutterMarkers ? null : makeMarker(color, value));  
     };
     
     View.prototype.markLines = function(from, to, marker) {
         var i = from;
         while(i <= to) {
-            this.markGutter(i + CODEMIRRORLINEOFFSET, marker.color);
+            this.markGutter(i + CODEMIRRORLINEOFFSET, marker.color, marker.value);
             this.markLine(i + CODEMIRRORLINEOFFSET, marker.className); 
             i++
         }

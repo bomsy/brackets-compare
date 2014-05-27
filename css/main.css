@@ -22,15 +22,17 @@
 /* Markers */
 .added {
     background-color: #CEFCEA;
-    //border-top: 1px solid #CEFCEA;
     padding: 2px 1px 2px 1px;
     width: 100%;
-    left: -10px;
-    border-bottom: 1px soild #ccc;
 }
 .added-chars {
     background-color: #87FED0;
     padding: 1px 1px 1px 1px;
+}
+.added-line {
+    border-top: 1px solid #CEFCEA;
+    padding: 2px 1px 2px 1px;
+    width: 100%;
 }
 .removed {
     background-color: #FCCEDB;
@@ -43,14 +45,8 @@
     background-color: #FF759C;
     padding: 1px 1px 1px 1px;
 }
-.replaced {
-    background-color: #FFE2B6;
-    border-radius: 3px;
-    padding: 0 3px 0 3px;
-    color: #fff ; 
-}
-
-.replaced-chars {
-    background-color: #FFBE5D;
-    padding: 1px 1px 1px 1px;
+.added-line {
+    border-top: 1px solid #FCCEDB;
+    padding: 2px 1px 2px 1px;
+    width: 100%;
 }
