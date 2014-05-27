@@ -6,10 +6,11 @@ define(function (require, exports, module) {
     "use strict";
     var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
     
-    var templateString = "<div id='{{ id }}-editor'class='compare-editor'>\
+    var templateString = "<div id='{{ id }}-editor-{{ layout }}' class='compare-editor-{{ layout }}'>\
                             <textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>\
                             <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
+    
     var CODEMIRRORLINEOFFSET = -1;
     
     function makeMarker(color, content) {
@@ -44,18 +45,28 @@ define(function (require, exports, module) {
         css  : "css",
         js   : "javascript" 
     };
-    
+
     View.markers = {
         added: {
             className: "added",
             color: "#00784A",
             value: "+"
         },
+        addedLine: {
+            className: "added-line",
+            color: "#00784A",
+            value: ""
+        },
         addedChars: "added-chars",
         removed: {
             className: "removed",
-            color: "#8E0028",
+            color: "#f00", //"#8E0028",
             value: "-"
+        },
+        removedLine: {
+            className: "removed-line",
+            color: "#8E0028",
+            value: ""
         },
         removedChars: "removed-chars"
     };
@@ -129,8 +140,8 @@ define(function (require, exports, module) {
         
     };
     
-    View.prototype.render = function() {
-        return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text });
+    View.prototype.render = function(layout) {
+        return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text, layout: layout });
     };
     
     exports.CompareView = View;

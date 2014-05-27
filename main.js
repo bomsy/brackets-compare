@@ -14,7 +14,9 @@ define(function (require, exports, module) {
         FileUtils        =   brackets.getModule("file/FileUtils"),
         NodeDomain       =   brackets.getModule("utils/NodeDomain"),
         COMPARE_CMD_ID   =   "start.compare",
-        COMPARE_CMD_TEXT =   "Compare with...";
+        COMPARE_CMD_TEXT =   "Compare with...",
+        COMPARE_H_ID =  "set.layout.horizontal",
+        COMPARE_V_ID = "set.layout.vertical";
     
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
@@ -29,6 +31,7 @@ define(function (require, exports, module) {
         var workerPath = ExtensionUtils.getModulePath(module, "js/worker/compare-worker.js")
         var worker = new Worker(workerPath);
         
+        var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
         var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
         
@@ -39,7 +42,7 @@ define(function (require, exports, module) {
             var result = new $.Deferred();
             FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
                 function(err, data) {
-                    if(!err) {
+                    if (!err) {
                         result.resolve(data[0]);
                     } else {
                         result.reject(err)
@@ -49,13 +52,22 @@ define(function (require, exports, module) {
         }
         
         function markViews(diffs) {
-            var replacedLines = {};
+            console.log(diffs);
             for (var i = 0; i < diffs.old.length; i++) {
-                oldView.markLines( diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
+                if (diffs.old[i].status == -1) {
+                    oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
+                } else {
+                    //oldView.markLines( diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removedLine);
+                }
+                
             }
-            console.log(replacedLines);
             for (var j = 0; j < diffs.new.length; j++) {
-                newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
+                if (diffs.new[j].status == 1) {
+                    newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
+                } else {
+                    //newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.removedLine);
+                }
+                
             }
         }
         
@@ -71,7 +83,9 @@ define(function (require, exports, module) {
             if(panel !== null) {
                 panel.destroy();
             }
-            panel = new ComparePanel({});
+            panel = new ComparePanel({
+                layout: ComparePanel.layouts.vertical
+            });
             
             // Setup listener for worker
             worker.addEventListener("message", onWorkerMessage, false);
@@ -119,6 +133,13 @@ define(function (require, exports, module) {
             });
         });
         
+        CommandManager.register("Show Diff Horizontal View", COMPARE_H_ID, function() {
+        
+        });
+        
+        CommandManager.register("Show Diff Vertical View", COMPARE_V_ID, function() {
+        
+        });
         // Events
         $(DocumentManager).on("currentDocumentChange", function() {
             if(panel !== null) {
@@ -129,6 +150,10 @@ define(function (require, exports, module) {
         });
         
         // Menus
+        viewMenu.addMenuDivider();
+        viewMenu.addMenuItem(COMPARE_H_ID);
+        viewMenu.addMenuItem(COMPARE_V_ID);
+        
         projectMenu.addMenuDivider();
         projectMenu.addMenuItem(COMPARE_CMD_ID);
         

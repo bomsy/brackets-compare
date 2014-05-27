@@ -2,21 +2,21 @@
     position: relative;
 }
 
-#compare-panel .compare-editor {
+#compare-panel .compare-editor-horizontal {
     height: 50%;
-    box-shadow: 2px 2px 5px #888888;
+}
+#compare-panel .compare-editor-vertical {
+    width: 50%;
+    height: 100%;
+    float: left;
 }
 
-#compare-panel .compare-status {
-
-}
-
-#compare-panel .cm-s-default {
+.compare-panel .cm-s-default {
     height: 100%;
 }
 
-#new-viewer-editor .cm-s-default {
-    border-top: 1px dashed #ccc; 
+#new-viewer-editor-horizontal .cm-s-default {
+    border-top: 1px dashed #888; 
 }
 
 /* Markers */
@@ -45,7 +45,7 @@
     background-color: #FF759C;
     padding: 1px 1px 1px 1px;
 }
-.added-line {
+.removed-line {
     border-top: 1px solid #FCCEDB;
     padding: 2px 1px 2px 1px;
     width: 100%;

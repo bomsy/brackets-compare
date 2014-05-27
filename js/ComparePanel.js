@@ -43,6 +43,7 @@ define(function (require, exports, module) {
         this.pane = null;
         this.$el = null;
         this.parent = null;
+        this.layout = options.layout || Panel.layouts["horizontal"];
         
         this.addView = this.addView.bind(this);
         this.loadViews = this.loadViews.bind(this);
@@ -58,6 +59,11 @@ define(function (require, exports, module) {
         
         this.initialize();
     };
+    
+    Panel.layouts = {
+        vertical: "vertical",
+        horizontal: "horizontal"
+    }; 
     
     Panel.prototype.initialize = function() {
 
@@ -95,7 +101,7 @@ define(function (require, exports, module) {
     Panel.prototype.renderViews = function() {
         var content = "<div id='compare-panel' class='compare-panel' >";
         for (var i = 0, len = this.views.length; i < len; i++) {
-            content += this.views[i].render(); 
+            content += this.views[i].render(this.layout); 
         }
         content += "</div>"    
         this.pane = PanelManager.createBottomPanel(COMPARE_PANEL, $(content), 1000);
