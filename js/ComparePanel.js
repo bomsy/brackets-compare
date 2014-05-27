@@ -73,6 +73,10 @@ define(function (require, exports, module) {
         _setHeight(this.$el);
     };
     
+    Panel.prototype.setLayout = function(layout) {
+        this.layout = layout;
+    };
+    
     Panel.prototype.bindEvents = function() {
         window.addEventListener("resize", this.onResize);
     };

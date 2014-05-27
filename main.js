@@ -13,14 +13,15 @@ define(function (require, exports, module) {
         FileSystem       =   brackets.getModule("filesystem/FileSystem"),
         FileUtils        =   brackets.getModule("file/FileUtils"),
         NodeDomain       =   brackets.getModule("utils/NodeDomain"),
+        
         COMPARE_CMD_ID   =   "start.compare",
         COMPARE_CMD_TEXT =   "Compare with...",
-        COMPARE_H_ID =  "set.layout.horizontal",
         COMPARE_V_ID = "set.layout.vertical";
     
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
 
+    var gblShowInVerticalView = true; // False shows in horizontal view
     
     AppInit.appReady(function() {
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
@@ -84,7 +85,7 @@ define(function (require, exports, module) {
                 panel.destroy();
             }
             panel = new ComparePanel({
-                layout: ComparePanel.layouts.vertical
+                layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal
             });
             
             // Setup listener for worker
@@ -133,12 +134,11 @@ define(function (require, exports, module) {
             });
         });
         
-        CommandManager.register("Show Diff Horizontal View", COMPARE_H_ID, function() {
         
-        });
-        
-        CommandManager.register("Show Diff Vertical View", COMPARE_V_ID, function() {
-        
+        CommandManager.register("Show Diffs Vertically", COMPARE_V_ID, function() {
+            gblShowInVerticalView = !gblShowInVerticalView;
+            panel.setLayout(gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal);
+            console.log(gblShowInVerticalView);
         });
         // Events
         $(DocumentManager).on("currentDocumentChange", function() {
@@ -151,7 +151,6 @@ define(function (require, exports, module) {
         
         // Menus
         viewMenu.addMenuDivider();
-        viewMenu.addMenuItem(COMPARE_H_ID);
         viewMenu.addMenuItem(COMPARE_V_ID);
         
         projectMenu.addMenuDivider();
