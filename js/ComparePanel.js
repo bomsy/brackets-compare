@@ -11,7 +11,9 @@ define(function (require, exports, module) {
         statusBar       =   brackets.getModule("widgets/StatusBar");
     
     var COMPARE_PANEL   =   "compare.panel";
-    
+    var statusInfoPanel = document.querySelector("#status-info");
+    var cacheStatusInfo = statusInfoPanel.innerText;
+        
     // Calculates size of the element to fill it containing container
     function _calcElHeight(el) {
         var $avlHeight = $(".content").height();
@@ -66,11 +68,23 @@ define(function (require, exports, module) {
     }; 
     
     Panel.prototype.initialize = function() {
-
+        statusInfoPanel.innerHTML = " ";
     };
     
     Panel.prototype.onResize = function()  {
         _setHeight(this.$el);
+    };
+    
+    Panel.prototype.showInfo = function(content) {
+        statusInfoPanel.innerHTML = content;
+    };
+    
+    Panel.prototype.showBusy = function() {
+        statusBar.showBusyIndicator(true);
+    };
+    
+    Panel.prototype.hideBusy = function() {
+        statusBar.hideBusyIndicator();
     };
     
     Panel.prototype.setLayout = function(layout) {
@@ -131,10 +145,13 @@ define(function (require, exports, module) {
     
     Panel.prototype.destroy = function() {
         this.hide();
+        
         window.removeEventListener("resize", this.onResize);
         for (var i = 0, len = this.views.length; i < len; i++) {
             this.views[i].destroy(); 
         }
+        console.log(cacheStatusInfo);
+        statusInfoPanel.innerText = cacheStatusInfo;
         
         this.remove();
         this.views = [];

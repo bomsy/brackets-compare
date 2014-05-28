@@ -14,9 +14,9 @@ define(function (require, exports, module) {
         FileUtils        =   brackets.getModule("file/FileUtils"),
         NodeDomain       =   brackets.getModule("utils/NodeDomain"),
         
-        COMPARE_CMD_ID   =   "start.compare",
-        COMPARE_CMD_TEXT =   "Compare with...",
-        COMPARE_V_ID = "set.layout.vertical";
+        CMD_COMPARE         =   "command.compare",
+        CMD_LAYOUT          =   "command.layout",
+        CMD_STICKYVIEWS      =   "command.strickyViews";
     
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
@@ -38,8 +38,8 @@ define(function (require, exports, module) {
         
         
         
-        //wrapper around FileSystem.showOpenDialog which returns a promise instead.
-        function fsShowOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
+        // wrapper around FileSystem.showOpenDialog which returns a promise instead.
+        function _fsShowOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
             var result = new $.Deferred();
             FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
                 function(err, data) {
@@ -52,35 +52,43 @@ define(function (require, exports, module) {
             return result.promise();
         }
         
-        function markViews(diffs) {
+        function _markViews(diffs) {
             console.log(diffs);
+            panel.showInfo((diffs.old.length + diffs.new.length) + " changes [ " + diffs.old.length + " removed, " + diffs.new.length + " added ] ");
             for (var i = 0; i < diffs.old.length; i++) {
-                if (diffs.old[i].status == -1) {
-                    oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
-                } else {
-                    //oldView.markLines( diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removedLine);
-                }
-                
+                oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
             }
             for (var j = 0; j < diffs.new.length; j++) {
-                if (diffs.new[j].status == 1) {
-                    newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
-                } else {
-                    //newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.removedLine);
-                }
-                
+                newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
             }
         }
         
-        function onWorkerMessage(e) {
-            markViews(e.data);
+        function _onWorkerMessage(e) {
+            _markViews(e.data);
+        }
+        
+        function _onLayoutChange() {
+            gblShowInVerticalView = !gblShowInVerticalView;
+            panel.setLayout(gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal);
+            CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
         }
          
+        function _onCurrentDocumentChange() {
+            if(panel !== null) {
+                panel.destroy();    
+            }
+            worker.removeEventListener("message", _onWorkerMessage, false);
+        }
         
+        function _onViewKeyPressed() {
+            
+        }
         
+        function _onStickViews() {
         
-        // Command register  
-        CommandManager.register(COMPARE_CMD_TEXT, COMPARE_CMD_ID, function() {
+        }
+        
+        function _onCompareViews() {
             if(panel !== null) {
                 panel.destroy();
             }
@@ -89,7 +97,7 @@ define(function (require, exports, module) {
             });
             
             // Setup listener for worker
-            worker.addEventListener("message", onWorkerMessage, false);
+            worker.addEventListener("message", _onWorkerMessage, false);
             
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
@@ -100,9 +108,10 @@ define(function (require, exports, module) {
                 text: _currentDoc.getText(),
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)]
             });
+            
             panel.addView(oldView);
             
-            fsShowOpenDialog( false, false, "Choose a file...", "", "")
+            _fsShowOpenDialog( false, false, "Choose a file...", "", "")
             .then(function(path) {
                 var r = new $.Deferred();
                 extFile = FileSystem.getFileForPath(path);
@@ -125,39 +134,37 @@ define(function (require, exports, module) {
                 panel.addView(newView);
                 panel.load();
                 panel.show();
-                
-                
+                    
                 worker.postMessage({
                     text1: oldView.getText(),
                     text2: newView.getText()
                 });
             });
-        });
+        }
         
         
-        CommandManager.register("Show Diffs Vertically", COMPARE_V_ID, function() {
-            gblShowInVerticalView = !gblShowInVerticalView;
-            panel.setLayout(gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal);
-            console.log(gblShowInVerticalView);
-        });
+        // Command register  
+        CommandManager.register("Compare with...", CMD_COMPARE, _onCompareViews);
+        
+        
+        CommandManager.register("Show Diffs Vertically", CMD_LAYOUT, _onLayoutChange);
+        CommandManager.register("Sticky Diffs Views", CMD_STICKYVIEWS, _onStickViews);
+        
         // Events
-        $(DocumentManager).on("currentDocumentChange", function() {
-            if(panel !== null) {
-                panel.destroy();    
-            }
-            // remove listener for worker
-            worker.removeEventListener("message", onWorkerMessage, false);
-        });
+        $(DocumentManager).on("currentDocumentChange", _onCurrentDocumentChange);
         
         // Menus
         viewMenu.addMenuDivider();
-        viewMenu.addMenuItem(COMPARE_V_ID);
+        viewMenu.addMenuItem(CMD_LAYOUT);   
+        viewMenu.addMenuItem(CMD_STICKYVIEWS);
+        
+        CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
         
         projectMenu.addMenuDivider();
-        projectMenu.addMenuItem(COMPARE_CMD_ID);
+        projectMenu.addMenuItem(CMD_COMPARE);
         
         workingSetMenu.addMenuDivider();
-        workingSetMenu.addMenuItem(COMPARE_CMD_ID);
+        workingSetMenu.addMenuItem(CMD_COMPARE);
     });
 });
 

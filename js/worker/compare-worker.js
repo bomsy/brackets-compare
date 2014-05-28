@@ -40,11 +40,11 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
                 oldDiffs.push(oldData);
                 // Specify a line in the old document showing where
                 // the data was remove from.
-                newDiffs.push({
+                /*newDiffs.push({
                     status: oldData.status,
                     startLine: oldData.endLine,
                     endLine: oldData.endLine
-                })
+                })*/
             } else if (diffs[i][0] == 1) {
                 newData = getMetadata(diffs[i][1], newPrevLastLine);
                 newPrevLastLine = newData.endLine;
@@ -53,11 +53,11 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
                 newDiffs.push(newData);
                 // To specify a line in the old document to show where
                 // the data will be added
-                oldDiffs.push({
+                /*oldDiffs.push({
                     status: newData.status,
                     startLine: newData.endLine,
                     endLine: oldData.endLine
-                });
+                });*/
             } else {
                 // Not adding this to diff lists
                 oldData = getMetadata(diffs[i][1], oldPrevLastLine);

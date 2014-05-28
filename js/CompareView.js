@@ -29,6 +29,8 @@ define(function (require, exports, module) {
         this.mode = options.mode || View.MODES["js"];
         this.cm = null; // Codemirror instance
         
+        this.onKeyPressed = options.onKeyPressed || null;
+        
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
         this.refresh = this.refresh.bind(this);
@@ -73,6 +75,7 @@ define(function (require, exports, module) {
     
     View.prototype.initialize = function() {
         this.setText(this.text);
+        
     };
     
     View.prototype.load = function() {
@@ -80,8 +83,17 @@ define(function (require, exports, module) {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
             lineWrapping: this.lineWrapping,
-            gutters: ["CodeMirror-linenumbers", "compares"]
+            gutters: ["CodeMirror-linenumbers", "compares"]     
         });
+        this.loadEvents();
+    };
+    
+    View.prototype.loadEvents = function() {
+        this.cm.on("keypress", this.onKeyPressed);
+    };
+    
+    View.prototype.destroyEvents = function() {
+         this.cm.off("keypress", this.onKeyPressed);
     };
     
     View.prototype.markLine = function(line, className) {
@@ -131,6 +143,7 @@ define(function (require, exports, module) {
     };
     
     View.prototype.destroy = function() {
+        this.destroyEvents();
         this.id = null;
         this.cm = null;
         this.text = "";

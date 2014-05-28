@@ -36,7 +36,6 @@ define(function (require, exports, module) {
         css  : "css",
         js   : "php" 
     };
-    
     View.prototype.initialize = function() {
         this.setText(this.text);
     };
