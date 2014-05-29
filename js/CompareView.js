@@ -20,6 +20,17 @@ define(function (require, exports, module) {
       return marker;
     }
     
+    function debounce(fn, delay) {
+      var timer = null;
+      return function () {
+        var context = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          fn.apply(context, args);
+        }, delay);
+      };
+    }
+    
     function View(options) {
         this.id = options.id;
         this.title = options.title || "";
@@ -29,8 +40,11 @@ define(function (require, exports, module) {
         this.mode = options.mode || View.MODES["js"];
         this.cm = null; // Codemirror instance
         
-        this.onKeyPressed = options.onKeyPressed || null;
+        this.markedLines = {};
         
+        this.onKeyPressed = options.onKeyPressed || function() {};
+        
+        this.onKeyPressed = this.onKeyPressed.bind(this);
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
         this.refresh = this.refresh.bind(this);
@@ -38,7 +52,7 @@ define(function (require, exports, module) {
         this.getText = this.getText.bind(this);
         this.render = this.render.bind(this);
         this.markGutter = this.markGutter.bind(this);
-        
+        this.removeAllLines = this.removeAllLines.bind(this);
         this.initialize();
     };
     
@@ -83,26 +97,45 @@ define(function (require, exports, module) {
             mode: this.mode,
             lineNumbers: this.lineNumbers,
             lineWrapping: this.lineWrapping,
-            gutters: ["CodeMirror-linenumbers", "compares"]     
+            gutters: ["CodeMirror-linenumbers", "compare-gutter"]     
         });
         this.loadEvents();
     };
     
     View.prototype.loadEvents = function() {
-        this.cm.on("keypress", this.onKeyPressed);
+        this.cm.on("change", debounce(this.onKeyPressed, 300));
     };
     
     View.prototype.destroyEvents = function() {
-         this.cm.off("keypress", this.onKeyPressed);
+         this.cm.off("change", debounce(this.onKeyPressed, 300));
     };
     
     View.prototype.markLine = function(line, className) {
-        this.cm.addLineClass(line, "background", className);
+        var mark = this.cm.addLineClass(line, "background", className);
+        if (!this.markedLines[line]) {
+            this.markedLines[line] = mark;
+        }
+    };
+    
+    View.prototype.removeAllLines = function() {
+        for (var line in this.markedLines) {
+            this.removeLine(this.markedLines[line]);
+        }
+    };
+    
+    View.prototype.removeLine = function(mark) {
+        console.log(mark);
+        this.cm.removeLineClass(mark, "background", mark.bgClass);
+        delete this.markedLines[mark.lineNo()];
     };
     
     View.prototype.markGutter = function(line, color, value) {
         var info = this.cm.lineInfo(line);
-        this.cm.setGutterMarker(line, "compares", info.gutterMarkers ? null : makeMarker(color, value));  
+        this.cm.setGutterMarker(line, "compare-gutter", info.gutterMarkers ? null : makeMarker(color, value));  
+    };
+    
+    View.prototype.clearGutter = function() {
+        this.cm.clearGutter("compare-gutter");
     };
     
     View.prototype.markLines = function(from, to, marker) {

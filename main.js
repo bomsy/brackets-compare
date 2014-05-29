@@ -21,7 +21,8 @@ define(function (require, exports, module) {
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
 
-    var gblShowInVerticalView = true; // False shows in horizontal view
+    var gblShowInVerticalView  = true, // False shows in horizontal view
+        gblStickyViews         = false; 
     
     AppInit.appReady(function() {
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
@@ -54,6 +55,10 @@ define(function (require, exports, module) {
         
         function _markViews(diffs) {
             console.log(diffs);
+            oldView.clearGutter();
+            newView.clearGutter();
+            oldView.removeAllLines();
+            newView.removeAllLines();
             panel.showInfo((diffs.old.length + diffs.new.length) + " changes [ " + diffs.old.length + " removed, " + diffs.new.length + " added ] ");
             for (var i = 0; i < diffs.old.length; i++) {
                 oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
@@ -80,8 +85,11 @@ define(function (require, exports, module) {
             worker.removeEventListener("message", _onWorkerMessage, false);
         }
         
-        function _onViewKeyPressed() {
-            
+        function _onViewKeyPressed(editor, e) {
+             worker.postMessage({
+                oldText : oldView.getText(),
+                newText : newView.getText()
+            });
         }
         
         function _onStickViews() {
@@ -106,7 +114,8 @@ define(function (require, exports, module) {
                 id: "old-viewer",
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
-                mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)]
+                mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
+                onKeyPressed: _onViewKeyPressed
             });
             
             panel.addView(oldView);
@@ -128,7 +137,8 @@ define(function (require, exports, module) {
                     id: "new-viewer",
                     title: extFile.name,
                     text: text,
-                    mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)]
+                    mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
+                    onKeyPressed: _onViewKeyPressed
                 });
                 
                 panel.addView(newView);
@@ -136,8 +146,8 @@ define(function (require, exports, module) {
                 panel.show();
                     
                 worker.postMessage({
-                    text1: oldView.getText(),
-                    text2: newView.getText()
+                    oldText : oldView.getText(),
+                    newText : newView.getText()
                 });
             });
         }

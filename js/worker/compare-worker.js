@@ -10,9 +10,23 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
 (function() {
     "use strict";
     
-    function diff_lineMode(text1, text2) {
+    function diff_lineMode(oldText, newText) {
         var dmp = new diff_match_patch();
-        var a = dmp.diff_linesToChars_(text1, text2);
+        var a = dmp.diff_linesToChars_(oldText, newText);
+        var lineText1 = a["chars1"];
+        var lineText2 = a["chars2"];
+        var lineArray = a["lineArray"];
+
+        var diffs = dmp.diff_main(lineText1, lineText2, false);
+
+        dmp.diff_charsToLines_(diffs, lineArray);
+        dmp.diff_cleanupSemantic(diffs);
+        return diffs;
+    }
+    
+    function diff_wordMode(oldText, newText) {
+        var dmp = new diff_match_patch();
+        var a = dmp.diff_linesToWords_(oldText, newText);
         var lineText1 = a["chars1"];
         var lineText2 = a["chars2"];
         var lineArray = a["lineArray"];
@@ -103,7 +117,7 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
     
     self.addEventListener("message", function(e) {
         var data = e.data;
-        var diffs = diff_lineMode(data.text1, data.text2);
+        var diffs = diff_lineMode(data.oldText, data.newText);
         diffs = diff_transform(diffs);
         self.postMessage(diffs);
     }, false);
