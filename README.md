@@ -10,7 +10,7 @@ Compare two files in brackets with detailed information about differences.
 * Setup tests
 * Add markers (lines) to show location of previous content
 * Word markers ???
-* Live diff updates on content change
+* ~~Live diff updates on content change~~
 * ~~Change gutter markers to + and -~~
 * ~~Vertical & Horzontal view layout options~~
 * Cleanup code
@@ -24,8 +24,10 @@ Compare two files in brackets with detailed information about differences.
 
 ### Screenshots
 
-#### Basic View
+#### Basic Horizontal Views
 ![sample screenshot 1](sample.png "Brackets compare usage")
+
+#### Basic Vertical Views
 
 
 #### View showing dialog

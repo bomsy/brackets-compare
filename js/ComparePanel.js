@@ -68,7 +68,7 @@ define(function (require, exports, module) {
     }; 
     
     Panel.prototype.initialize = function() {
-        statusInfoPanel.innerHTML = " ";
+       
     };
     
     Panel.prototype.onResize = function()  {

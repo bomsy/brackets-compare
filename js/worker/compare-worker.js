@@ -45,33 +45,37 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         var newPrevLastLine = 0;
         var oldData;
         var newData;
+        var n = {};
+        var o = {};
         for(var i = 0; i < diffs.length; i++) {
             if (diffs[i][0] == -1) {
                 oldData = getMetadata(diffs[i][1], oldPrevLastLine);
-                oldPrevLastLine = oldData.endLine;
+                
                 oldData.status = diffs[i][0];
                 oldData.text = diffs[i][1];
                 oldDiffs.push(oldData);
-                // Specify a line in the old document showing where
-                // the data was remove from.
-                /*newDiffs.push({
-                    status: oldData.status,
-                    startLine: oldData.endLine,
-                    endLine: oldData.endLine
-                })*/
+                
+                // Look ahead see if it is a replace
+                if (diffs[i+1]!== undefined && (diffs[i+1][0] == 0 || diffs[i+1][0] == -1)) {
+                    n.startLine = oldData.startLine;
+                    n.endLine = n.startLine;
+                    n.status = oldData.status;
+                    n.text = "";
+                    newDiffs.push(n);
+                }
+                oldPrevLastLine = oldData.endLine;
             } else if (diffs[i][0] == 1) {
                 newData = getMetadata(diffs[i][1], newPrevLastLine);
-                newPrevLastLine = newData.endLine;
                 newData.status = diffs[i][0];
                 newData.text = diffs[i][1];
                 newDiffs.push(newData);
-                // To specify a line in the old document to show where
-                // the data will be added
-                /*oldDiffs.push({
-                    status: newData.status,
-                    startLine: newData.endLine,
-                    endLine: oldData.endLine
-                });*/
+                // Look ahead see if it is a replace
+                o.startLine = 4//newData.startLine;
+                o.endLine = 4//o.startLine;
+                o.status = newData.status;
+                o.text = "";
+                oldDiffs.push(o);
+                newPrevLastLine = newData.endLine;
             } else {
                 // Not adding this to diff lists
                 oldData = getMetadata(diffs[i][1], oldPrevLastLine);

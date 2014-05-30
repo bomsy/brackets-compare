@@ -58,8 +58,8 @@ define(function (require, exports, module) {
             oldView.removeAllLines();
             newView.removeAllLines();
 
-            panel.showInfo((diffs.old.length + diffs.new.length) +
-                " changes [ " + diffs.old.length + " removed, " + diffs.new.length + " added ] ");
+            /*panel.showInfo((diffs.old.length + diffs.new.length) +
+                " changes [ " + diffs.old.length + " removed, " + diffs.new.length + " added ] ");*/
             for (var i = 0; i < diffs.old.length; i++) {
                 oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
             }
@@ -172,5 +172,7 @@ define(function (require, exports, module) {
 
         workingSetMenu.addMenuDivider();
         workingSetMenu.addMenuItem(CMD_COMPARE);
+        
+        exports.bracketsCompare = {};
     });
 });
