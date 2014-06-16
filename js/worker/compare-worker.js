@@ -38,92 +38,171 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         return diffs;
     }
     
-    function diff_transform(diffs) {
-        var oldDiffs = [];
-        var newDiffs = [];
+    function diffTransform(diffs) {
+        var oDiffs = [];
+        var nDiffs = [];
         var oldPrevLastLine = 0;
         var newPrevLastLine = 0;
-        var oldData;
-        var newData;
-        var n = {};
-        var o = {};
+        var o;
+        var n;
         for(var i = 0; i < diffs.length; i++) {
             if (diffs[i][0] == -1) {
-                oldData = getMetadata(diffs[i][1], oldPrevLastLine);
-                
-                oldData.status = diffs[i][0];
-                oldData.text = diffs[i][1];
-                oldDiffs.push(oldData);
-                
+                o = extractMeta(diffs[i][1], oldPrevLastLine);
+                o.status = diffs[i][0];
+                oDiffs.push(o);
                 // Look ahead see if it is a replace
-                if (diffs[i+1]!== undefined && (diffs[i+1][0] == 0 || diffs[i+1][0] == -1)) {
-                    n.startLine = oldData.startLine;
-                    n.endLine = n.startLine;
-                    n.status = oldData.status;
-                    n.text = "";
-                    newDiffs.push(n);
-                }
-                oldPrevLastLine = oldData.endLine;
+                if (diffs[i+1][0] == 0 || diffs[i+1][0] == -1) {
+                    nDiffs.push({
+                        startLine: newPrevLastLine + 1,
+                        endLine: newPrevLastLine + 1,
+                        status: o.status
+                    });
+                } 
+                oldPrevLastLine = o.endLine;
             } else if (diffs[i][0] == 1) {
-                newData = getMetadata(diffs[i][1], newPrevLastLine);
-                newData.status = diffs[i][0];
-                newData.text = diffs[i][1];
-                newDiffs.push(newData);
-                // Look ahead see if it is a replace
-                o.startLine = 4//newData.startLine;
-                o.endLine = 4//o.startLine;
-                o.status = newData.status;
-                o.text = "";
-                oldDiffs.push(o);
-                newPrevLastLine = newData.endLine;
+                n = extractMeta(diffs[i][1], newPrevLastLine);
+                n.status = diffs[i][0];
+                nDiffs.push(n);
+                // Look behind to see if it was a replace
+                if (diffs[i-1][0] !== -1) {
+                    oDiffs.push({ 
+                        startLine: oldPrevLastLine + 1,
+                        endLine: oldPrevLastLine + 1,
+                        status: n.status
+                    });
+                } 
+                newPrevLastLine = n.endLine;
             } else {
                 // Not adding this to diff lists
-                oldData = getMetadata(diffs[i][1], oldPrevLastLine);
-                newData = getMetadata(diffs[i][1], newPrevLastLine);
-                oldPrevLastLine = oldData.endLine;
-                newPrevLastLine = newData.endLine;
-                oldData.status = diffs[i][0];
-                oldData.text = diffs[i][1];
-                newData.status = diffs[i][0];
-                newData.text = diffs[i][1];
-                //oldDiffs.push(oldData);
-                //newDiffs.push(newData);
+                o = extractMeta(diffs[i][1], oldPrevLastLine);
+                n = extractMeta(diffs[i][1], newPrevLastLine);
+                oldPrevLastLine = o.endLine;
+                newPrevLastLine = n.endLine;
             }
         }
         return {
-            "old": oldDiffs,
-            "new": newDiffs
+            "old": oDiffs,
+            "new": nDiffs
         }
     }
     
-    function getMetadata(diffText, prevContentLastLine) {
+        function diffTransformWords(diffs) {
+        var oDiffs = [];
+        var nDiffs = [];
+        var oldPrevLastLine = 1;
+        var newPrevLastLine = 1;
+        var oldPrevLastChar = 0;
+        var newPrevLastChar = 0;
+        var o;
+        var n;
+        for(var i = 0; i < diffs.length; i++) {
+            if (diffs[i][0] == -1) {
+                o = extractCharMeta(diffs[i][1], oldPrevLastLine, oldPrevLastChar);
+                o.status = diffs[i][0];
+                o.text = diffs[i][1];
+                oDiffs.push(o);
+                oldPrevLastLine = o.endLine;
+                oldPrevLastChar = o.endChar;
+                
+            } else if (diffs[i][0] == 1) {
+                n = extractCharMeta(diffs[i][1], newPrevLastLine, newPrevLastChar);
+                n.status = diffs[i][0];
+                n.text = diffs[i][1];
+                
+                nDiffs.push(n);
+                newPrevLastLine = n.endLine;
+                newPrevLastChar = n.endChar;
+            } else {
+                // Not adding this to diff lists
+                o = extractCharMeta(diffs[i][1], oldPrevLastLine, oldPrevLastChar);
+                n = extractCharMeta(diffs[i][1], newPrevLastLine, newPrevLastChar);
+                o.status = diffs[i][0];
+                o.text = diffs[i][1];
+                n.status = diffs[i][0];
+                n.text = diffs[i][1];
+                oDiffs.push(o);
+                nDiffs.push(n);
+                oldPrevLastLine = o.endLine;
+                oldPrevLastChar = o.endChar;
+                newPrevLastLine = n.endLine;
+                newPrevLastChar = n.endChar;
+            }
+        }
+        return {
+            "old": oDiffs,
+            "new": nDiffs
+        }
+    }
+    
+
+    function extractCharMeta(text, prevContentLastLine, prevContentLastChar) {
+        var lineEndIndex = 0;
+        var lineStartIndex = 0
+        var lines = 0;
+        var ch = 0;
+        var stl = prevContentLastLine;
+        var stc = prevContentLastChar;
+        var flag = false;
+        
+        while(true) {
+            lineEndIndex = text.indexOf("\n", lineStartIndex);
+            if (lineEndIndex == -1) {
+                stc += text.substring(lineStartIndex).length;
+                break;
+            }
+            if (lineEndIndex >= text.length - 1) {
+                stc = 0;
+                stl++;
+                lines++
+                break;
+            }
+            
+            lineStartIndex = lineEndIndex + 1;
+            stl++;
+            stc = 0;
+            lines++;
+        }
+        return {
+            startLine: prevContentLastLine,
+            endLine: stl,
+            startChar: prevContentLastChar,
+            endChar: stc
+        }
+    }
+    
+    function extractMeta(text, prevContentLastLine) {
         var lineEndIndex = 0;
         var lineStartIndex = 0
         var lastLineEndIndex = 0;
         var lines = 0;
-         while(true) {
-            lineEndIndex = diffText.indexOf("\n", lineStartIndex);
-            // End of the lines
+        while(true) {
+            lineEndIndex = text.indexOf("\n", lineStartIndex);
             if (lineEndIndex == -1) {
                 break;
             }
-            lastLineEndIndex = lineEndIndex - lineStartIndex; //no of characters on the last line
+            lastLineEndIndex = lineEndIndex - lineStartIndex;
             lineStartIndex = lineEndIndex + 1;
             lines++;
-        } 
+        }
         return {
             startLine: prevContentLastLine + 1,
-            startChar: 0,
-            endLine: prevContentLastLine + lines,
-            endChar: lastLineEndIndex
+            endLine: prevContentLastLine + lines
         }
     }
-    
+
     self.addEventListener("message", function(e) {
         var data = e.data;
-        var diffs = diff_lineMode(data.oldText, data.newText);
-        diffs = diff_transform(diffs);
-        self.postMessage(diffs);
+        var diffs;
+        var d;
+        if(data.mode == 0) {
+            diffs = diff_lineMode(data.o, data.n);
+            d = diffTransform(diffs);
+        } else {
+            diffs = diff_wordMode(data.o, data.n);
+            d = diffTransformWords(diffs);
+        }
+        d.raw = diffs
+        d.mode = data.mode;
+        self.postMessage(d);
     }, false);
-    
 }());

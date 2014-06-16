@@ -29,6 +29,17 @@ define(function (require, exports, module){
         }, delay);
       };
     }
+    
+    function scale(value, frm, to) {
+        return value * (to / frm);
+    }
+    
+    function scaleObjectValues(o, frm, to) {
+        for(var prop in o) {
+            o[prop] = scale(o[prop], frm, to);
+        }
+        return o;
+    }
 
     function View(options) {
         this.id = options.id;
@@ -57,6 +68,7 @@ define(function (require, exports, module){
         this.render = this.render.bind(this);
         this.markGutter = this.markGutter.bind(this);
         this.removeAllLines = this.removeAllLines.bind(this);
+        this.scrollIntoView = this.scrollIntoView.bind(this);
         this.initialize();
     }
 
@@ -123,7 +135,18 @@ define(function (require, exports, module){
             this.markedLines[line] = mark;
         }
     };
-
+    /**
+     * Scrolls  the view based of the data objects passed in
+     * Based on Codemirrors "scrollIntoView" options
+     */
+    View.prototype.scrollIntoView = function(o) {
+        this.cm.scrollIntoView(o);
+    };
+        
+    View.prototype.getScrollInfo = function() {
+        return this.cm.getScrollInfo();
+    };
+    
     View.prototype.removeAllLines = function() {
         for (var line in this.markedLines) {
           if (this.markedLines.hasOwnProperty(line)) {
@@ -133,7 +156,6 @@ define(function (require, exports, module){
     };
 
     View.prototype.removeLine = function(mark) {
-        console.log(mark);
         this.cm.removeLineClass(mark, "background", mark.bgClass);
         delete this.markedLines[mark.lineNo()];
     };
@@ -156,7 +178,8 @@ define(function (require, exports, module){
         }
     };
 
-    View.prototype.markChars = function(from, to , className) {
+    View.prototype.markText = function(from, to , className) {
+        console.log("     from: [" + (from.line + CODEMIRRORLINEOFFSET) + ", " + from.ch + " ]to: [ " + (to.line + CODEMIRRORLINEOFFSET) + ", " + from.ch + "]" )
         this.cm.markText({
             line: from.line + CODEMIRRORLINEOFFSET,
             ch: from.ch

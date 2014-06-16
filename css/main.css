@@ -30,23 +30,21 @@
     padding: 1px 1px 1px 1px;
 }
 .added-line {
-    border-top: 1px solid #CEFCEA;
+    border-top: 1px dotted #CEFCEA;
     padding: 2px 1px 2px 1px;
     width: 100%;
 }
 .removed {
     background-color: #FCCEDB;
     padding: 2px 1px 2px 1px;
-    color: #000 ;
     width: 100%;
-    border-bottom: 1px soild #ccc;
 }
 .removed-chars {
     background-color: #FF759C;
     padding: 1px 1px 1px 1px;
 }
 .removed-line {
-    border-top: 1px solid #FCCEDB;
+    border-top: 1px dotted #FCCEDB;
     padding: 2px 1px 2px 1px;
     width: 100%;
 }

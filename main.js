@@ -51,25 +51,69 @@ define(function (require, exports, module) {
             return result.promise();
         }
 
-        function _markViews(diffs) {
-            console.log(diffs);
+        function _markViews(o, n) {
             oldView.clearGutter();
             newView.clearGutter();
             oldView.removeAllLines();
             newView.removeAllLines();
-
-            /*panel.showInfo((diffs.old.length + diffs.new.length) +
-                " changes [ " + diffs.old.length + " removed, " + diffs.new.length + " added ] ");*/
-            for (var i = 0; i < diffs.old.length; i++) {
-                oldView.markLines(diffs.old[i].startLine, diffs.old[i].endLine, CompareView.markers.removed);
+            var lineMarker = null;
+            for (var i = 0; i < o.length; i++) {
+                if (o[i].status === -1) {
+                    lineMarker = CompareView.markers.removed;
+                } else {
+                    lineMarker = CompareView.markers.addedLine;    
+                }
+                oldView.markLines(o[i].startLine, o[i].endLine, lineMarker);
             }
-            for (var j = 0; j < diffs.new.length; j++) {
-                newView.markLines( diffs.new[j].startLine, diffs.new[j].endLine, CompareView.markers.added);
+            
+            for (var j = 0; j < n.length; j++) {
+                if (n[j].status === 1) {
+                    lineMarker = CompareView.markers.added;
+                } else {
+                    lineMarker = CompareView.markers.removedLine;
+                }
+                newView.markLines( n[j].startLine, n[j].endLine, lineMarker);
+            }
+        }
+            
+        function _markChars(o, n, r) {
+            console.log(o);
+            console.log(n);
+            
+            for (var i = 0; i < o.length; i++) {
+                if (o[i].status == -1) {
+                    console.log("old -> from: [" + o[i].startLine + ", " + o[i].startChar + " ]to: [ " + o[i].endLine + ", " + o[i].endChar + "]" );
+                    oldView.markText({
+                        line: o[i].startLine,
+                        ch: o[i].startChar
+                    }, {
+                        line: o[i].endLine,
+                        ch: o[i].endChar
+                    }, CompareView.markers.removedChars);
+                }
+            }
+            
+            for (var j = 0; j < n.length; j++) {
+                if (n[j].status == 1) {
+                    console.log("new -> from: [" + n[j].startLine + ", " + n[j].startChar + " ]to: [ " + n[j].endLine + ", " + n[j].endChar + "]" );
+                    newView.markText({
+                        line: n[j].startLine,
+                        ch: n[j].startChar
+                    }, {
+                        line: n[j].endLine,
+                        ch: n[j].endChar
+                    }, CompareView.markers.addedChars);
+                } 
             }
         }
 
         function _onWorkerMessage(e) {
-            _markViews(e.data);
+            var data = e.data;
+            if (data.mode == 0) {
+                _markViews(data.old, data.new);
+            } else {
+                //_markChars(data.old, data.new, data.raw);
+            }
         }
 
         function _onLayoutChange() {
@@ -86,10 +130,12 @@ define(function (require, exports, module) {
         }
 
         function _onViewKeyPressed(editor, e) {
-             worker.postMessage({
-                oldText : oldView.getText(),
-                newText : newView.getText()
-            });
+            _runWorker();
+        }
+        
+        function _runWorker() {
+            worker.postMessage({ mode: 0, o: oldView.getText(), n: newView.getText() });
+            worker.postMessage({ mode: 1, o: oldView.getText(), n: newView.getText() });
         }
 
         function _onStickViews() {
@@ -115,7 +161,16 @@ define(function (require, exports, module) {
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
-                onKeyPressed: _onViewKeyPressed
+                onKeyPressed: _onViewKeyPressed,
+                onScroll: function() {
+                    var o = this.getScrollInfo();
+                    newView.scrollIntoView({
+                        left: 0,
+                        right: 0,
+                        top: o.top,
+                        bottom: newView.getScrollInfo().height
+                    });   
+                }
             });
 
             panel.addView(oldView);
@@ -138,17 +193,23 @@ define(function (require, exports, module) {
                     title: extFile.name,
                     text: text,
                     mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
-                    onKeyPressed: _onViewKeyPressed
+                    onKeyPressed: _onViewKeyPressed,
+                    onScroll: function() {
+                        var o = this.getScrollInfo();
+                        oldView.scrollIntoView({
+                            left: 0,
+                            right: 0,
+                            top: o.top,
+                            bottom: oldView.getScrollInfo().height
+                        });   
+                    }
                 });
 
                 panel.addView(newView);
                 panel.load();
                 panel.show();
 
-                worker.postMessage({
-                    oldText : oldView.getText(),
-                    newText : newView.getText()
-                });
+                _runWorker();
             });
         }
 
@@ -173,6 +234,6 @@ define(function (require, exports, module) {
         workingSetMenu.addMenuDivider();
         workingSetMenu.addMenuItem(CMD_COMPARE);
         
-        exports.bracketsCompare = {};
+        exports.fake = {};
     });
 });

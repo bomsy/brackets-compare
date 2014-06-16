@@ -491,6 +491,14 @@ diff_match_patch.prototype.diff_linesToChars_ = function(text1, text2) {
 };
 
 /**
+ * Monkey patch unto the string object
+ */
+String.prototype.regexIndexOf = function(regex, startpos) {
+    var indexOf = this.substring(startpos || 0).search(regex);
+    return (indexOf >= 0) ? (indexOf + (startpos || 0)) : indexOf;
+}
+
+/**
  * As the function above but works in word mode
  */
 diff_match_patch.prototype.diff_linesToWords_ = function(text1, text2) {
@@ -519,7 +527,7 @@ diff_match_patch.prototype.diff_linesToWords_ = function(text1, text2) {
     // Keeping our own length variable is faster than looking it up.
     var lineArrayLength = lineArray.length;
     while (lineEnd < text.length - 1) {
-      lineEnd = text.indexOf('\s', lineStart);
+      lineEnd = text.regexIndexOf(/(\W)/g, lineStart);
       if (lineEnd == -1) {
         lineEnd = text.length - 1;
       }

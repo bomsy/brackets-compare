@@ -4,6 +4,8 @@ define(function (require, exports, module) {
     "use strict";
 
     var main = require("main");
+    var view = require("").CompareView;
+    var panel = require("").ComaprePanel;
     
     describe("Hello World", function () {
         it("should expose a handleHelloWorld method", function () {
