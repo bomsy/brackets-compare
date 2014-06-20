@@ -77,12 +77,8 @@ define(function (require, exports, module) {
         }
             
         function _markChars(o, n, r) {
-            console.log(o);
-            console.log(n);
-            
             for (var i = 0; i < o.length; i++) {
                 if (o[i].status == -1) {
-                    console.log("old -> from: [" + o[i].startLine + ", " + o[i].startChar + " ]to: [ " + o[i].endLine + ", " + o[i].endChar + "]" );
                     oldView.markText({
                         line: o[i].startLine,
                         ch: o[i].startChar
@@ -95,7 +91,6 @@ define(function (require, exports, module) {
             
             for (var j = 0; j < n.length; j++) {
                 if (n[j].status == 1) {
-                    console.log("new -> from: [" + n[j].startLine + ", " + n[j].startChar + " ]to: [ " + n[j].endLine + ", " + n[j].endChar + "]" );
                     newView.markText({
                         line: n[j].startLine,
                         ch: n[j].startChar
@@ -112,7 +107,7 @@ define(function (require, exports, module) {
             if (data.mode == 0) {
                 _markViews(data.old, data.new);
             } else {
-                //_markChars(data.old, data.new, data.raw);
+                _markChars(data.old, data.new, data.raw);
             }
         }
 

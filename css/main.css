@@ -26,7 +26,7 @@
     width: 100%;
 }
 .added-chars {
-    background-color: #87FED0;
+    background-color: #45FDB7;
     padding: 1px 1px 1px 1px;
 }
 .added-line {
@@ -40,7 +40,7 @@
     width: 100%;
 }
 .removed-chars {
-    background-color: #FF759C;
+    background-color: #FFAFC6;
     padding: 1px 1px 1px 1px;
 }
 .removed-line {

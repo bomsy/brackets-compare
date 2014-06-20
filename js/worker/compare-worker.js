@@ -10,7 +10,7 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
 (function() {
     "use strict";
     
-    function diff_lineMode(oldText, newText) {
+    function diffLines(oldText, newText) {
         var dmp = new diff_match_patch();
         var a = dmp.diff_linesToChars_(oldText, newText);
         var lineText1 = a["chars1"];
@@ -24,7 +24,7 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         return diffs;
     }
     
-    function diff_wordMode(oldText, newText) {
+    function diffWords(oldText, newText) {
         var dmp = new diff_match_patch();
         var a = dmp.diff_linesToWords_(oldText, newText);
         var lineText1 = a["chars1"];
@@ -38,46 +38,46 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         return diffs;
     }
     
-    function diffTransform(diffs) {
+    function lineAnalysis(diffs) {
         var oDiffs = [];
         var nDiffs = [];
-        var oldPrevLastLine = 0;
-        var newPrevLastLine = 0;
+        var oline = 0;
+        var nline = 0;
         var o;
         var n;
         for(var i = 0; i < diffs.length; i++) {
             if (diffs[i][0] == -1) {
-                o = extractMeta(diffs[i][1], oldPrevLastLine);
+                o = lineInfo(diffs[i][1], oline);
                 o.status = diffs[i][0];
                 oDiffs.push(o);
                 // Look ahead see if it is a replace
                 if (diffs[i+1][0] == 0 || diffs[i+1][0] == -1) {
                     nDiffs.push({
-                        startLine: newPrevLastLine + 1,
-                        endLine: newPrevLastLine + 1,
+                        startLine: nline + 1,
+                        endLine: nline + 1,
                         status: o.status
                     });
                 } 
-                oldPrevLastLine = o.endLine;
+                oline = o.endLine;
             } else if (diffs[i][0] == 1) {
-                n = extractMeta(diffs[i][1], newPrevLastLine);
+                n = lineInfo(diffs[i][1], nline);
                 n.status = diffs[i][0];
                 nDiffs.push(n);
                 // Look behind to see if it was a replace
                 if (diffs[i-1][0] !== -1) {
                     oDiffs.push({ 
-                        startLine: oldPrevLastLine + 1,
-                        endLine: oldPrevLastLine + 1,
+                        startLine: oline + 1,
+                        endLine: oline + 1,
                         status: n.status
                     });
                 } 
-                newPrevLastLine = n.endLine;
+                nline = n.endLine;
             } else {
                 // Not adding this to diff lists
-                o = extractMeta(diffs[i][1], oldPrevLastLine);
-                n = extractMeta(diffs[i][1], newPrevLastLine);
-                oldPrevLastLine = o.endLine;
-                newPrevLastLine = n.endLine;
+                o = lineInfo(diffs[i][1], oline);
+                n = lineInfo(diffs[i][1], nline);
+                oline = o.endLine;
+                nline = n.endLine;
             }
         }
         return {
@@ -86,46 +86,36 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         }
     }
     
-        function diffTransformWords(diffs) {
+    function wordAnalysis(diffs) {
         var oDiffs = [];
         var nDiffs = [];
-        var oldPrevLastLine = 1;
-        var newPrevLastLine = 1;
-        var oldPrevLastChar = 0;
-        var newPrevLastChar = 0;
+        var oline = 1, nline = 1;
+        var ochar = 0, nchar = 0;
         var o;
         var n;
+        // Loop through all diffs    
         for(var i = 0; i < diffs.length; i++) {
             if (diffs[i][0] == -1) {
-                o = extractCharMeta(diffs[i][1], oldPrevLastLine, oldPrevLastChar);
-                o.status = diffs[i][0];
-                o.text = diffs[i][1];
+                o = charInfo(diffs[i][1], oline, ochar);
+                o.status = diffs[i][0];               
                 oDiffs.push(o);
-                oldPrevLastLine = o.endLine;
-                oldPrevLastChar = o.endChar;
+                oline = o.endLine;
+                ochar = o.endChar;
                 
             } else if (diffs[i][0] == 1) {
-                n = extractCharMeta(diffs[i][1], newPrevLastLine, newPrevLastChar);
+                n = charInfo(diffs[i][1], nline, nchar);
                 n.status = diffs[i][0];
-                n.text = diffs[i][1];
-                
                 nDiffs.push(n);
-                newPrevLastLine = n.endLine;
-                newPrevLastChar = n.endChar;
+                nline = n.endLine;
+                nchar = n.endChar;
             } else {
                 // Not adding this to diff lists
-                o = extractCharMeta(diffs[i][1], oldPrevLastLine, oldPrevLastChar);
-                n = extractCharMeta(diffs[i][1], newPrevLastLine, newPrevLastChar);
-                o.status = diffs[i][0];
-                o.text = diffs[i][1];
-                n.status = diffs[i][0];
-                n.text = diffs[i][1];
-                oDiffs.push(o);
-                nDiffs.push(n);
-                oldPrevLastLine = o.endLine;
-                oldPrevLastChar = o.endChar;
-                newPrevLastLine = n.endLine;
-                newPrevLastChar = n.endChar;
+                o = charInfo(diffs[i][1], oline, ochar);
+                n = charInfo(diffs[i][1], nline, nchar);
+                oline = o.endLine;
+                ochar = o.endChar;
+                nline = n.endLine;
+                nchar = n.endChar;
             }
         }
         return {
@@ -135,58 +125,56 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
     }
     
 
-    function extractCharMeta(text, prevContentLastLine, prevContentLastChar) {
-        var lineEndIndex = 0;
-        var lineStartIndex = 0
-        var lines = 0;
-        var ch = 0;
-        var stl = prevContentLastLine;
-        var stc = prevContentLastChar;
-        var flag = false;
+    function charInfo(text, ln, ch) {
+        var endIndex = 0, 
+            startIndex = 0
+        var stl, stc = 0, endl, endc;
         
+        if (ch !== 0) {
+            stc = ch;       
+        }
+        stl = ln; 
+        endc = stc;
+        endl = stl;
         while(true) {
-            lineEndIndex = text.indexOf("\n", lineStartIndex);
-            if (lineEndIndex == -1) {
-                stc += text.substring(lineStartIndex).length;
+            endIndex = text.indexOf("\n", startIndex);
+            if (endIndex == -1) {
+                endc += text.substring(startIndex).length;
                 break;
             }
-            if (lineEndIndex >= text.length - 1) {
-                stc = 0;
-                stl++;
-                lines++
+            if (endIndex >= text.length - 1) {
+                endc = 0;
+                endl++;
                 break;
             }
             
-            lineStartIndex = lineEndIndex + 1;
-            stl++;
-            stc = 0;
-            lines++;
+            startIndex = endIndex + 1;
+            endl++;
+            endc = 0;
         }
         return {
-            startLine: prevContentLastLine,
-            endLine: stl,
-            startChar: prevContentLastChar,
-            endChar: stc
+            startLine: stl,
+            endLine: endl,
+            startChar: stc,
+            endChar: endc
         }
     }
     
-    function extractMeta(text, prevContentLastLine) {
-        var lineEndIndex = 0;
-        var lineStartIndex = 0
-        var lastLineEndIndex = 0;
+    function lineInfo(text, ln) {
+        var endIndex = 0;
+        var startIndex = 0
         var lines = 0;
         while(true) {
-            lineEndIndex = text.indexOf("\n", lineStartIndex);
-            if (lineEndIndex == -1) {
+            endIndex = text.indexOf("\n", startIndex);
+            if (endIndex == -1) {
                 break;
             }
-            lastLineEndIndex = lineEndIndex - lineStartIndex;
-            lineStartIndex = lineEndIndex + 1;
+            startIndex = endIndex + 1;
             lines++;
         }
         return {
-            startLine: prevContentLastLine + 1,
-            endLine: prevContentLastLine + lines
+            startLine: ln + 1,
+            endLine: ln + lines
         }
     }
 
@@ -195,13 +183,12 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         var diffs;
         var d;
         if(data.mode == 0) {
-            diffs = diff_lineMode(data.o, data.n);
-            d = diffTransform(diffs);
+            diffs = diffLines(data.o, data.n);
+            d = lineAnalysis(diffs);
         } else {
-            diffs = diff_wordMode(data.o, data.n);
-            d = diffTransformWords(diffs);
+            diffs = diffWords(data.o, data.n);
+            d = wordAnalysis(diffs);
         }
-        d.raw = diffs
         d.mode = data.mode;
         self.postMessage(d);
     }, false);

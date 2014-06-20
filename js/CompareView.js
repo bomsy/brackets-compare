@@ -10,7 +10,7 @@ define(function (require, exports, module){
                             "<!--<div id='' class='compare-status'> {{ title }} </div>-->" +
                          "</div>";
 
-    var CODEMIRRORLINEOFFSET = -1;
+    var offset = -1;
 
     function makeMarker(color, content) {
       var marker = document.createElement("div");
@@ -172,23 +172,26 @@ define(function (require, exports, module){
     View.prototype.markLines = function(from, to, marker) {
         var i = from;
         while(i <= to) {
-            this.markGutter(i + CODEMIRRORLINEOFFSET, marker.color, marker.value);
-            this.markLine(i + CODEMIRRORLINEOFFSET, marker.className);
+            this.markGutter(i + offset, marker.color, marker.value);
+            this.markLine(i + offset, marker.className);
             i++;
         }
     };
 
-    View.prototype.markText = function(from, to , className) {
-        console.log("     from: [" + (from.line + CODEMIRRORLINEOFFSET) + ", " + from.ch + " ]to: [ " + (to.line + CODEMIRRORLINEOFFSET) + ", " + from.ch + "]" )
+    View.prototype.markText = function(from, to, className) {
         this.cm.markText({
-            line: from.line + CODEMIRRORLINEOFFSET,
+            line: from.line + offset,
             ch: from.ch
         }, {
-            line: to.line + CODEMIRRORLINEOFFSET,
-            ch: from.ch
+            line: to.line + offset,
+            ch: to.ch
         }, {
             className: className
         });
+    };
+    
+    View.prototype.unmarkText = function() {
+    
     };
 
     View.prototype.refresh = function() {
