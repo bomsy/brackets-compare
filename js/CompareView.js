@@ -48,13 +48,14 @@ define(function (require, exports, module){
         this.lineNumbers = options.lineNumbers || true;
         this.lineWrapping = options.lineWrapping || true;
         this.mode = options.mode || View.MODES.js;
-        this.cm = null; // Codemirror instance
+        this.cm = null;
+        this.emitScrollEvents = true;
 
         this.markedLines = {};
 
         // Events
         this.onKeyPressed = options.onKeyPressed || function() {};
-        this.onScroll = options.onScroll || function() {};
+        this.onScroll = options.onScroll || function() { };
         this.onViewportChange = options.onViewportChange || function() {};
 
         this.onKeyPressed = this.onKeyPressed.bind(this);
@@ -69,6 +70,7 @@ define(function (require, exports, module){
         this.markGutter = this.markGutter.bind(this);
         this.removeAllLines = this.removeAllLines.bind(this);
         this.scrollIntoView = this.scrollIntoView.bind(this);
+        this._emitScrollEvent = this._emitScrollEvent.bind(this);
         this.initialize();
     }
 
@@ -118,15 +120,21 @@ define(function (require, exports, module){
     };
 
     View.prototype.loadEvents = function() {
-        this.cm.on("change", debounce(this.onKeyPressed, 300));
-        this.cm.on("scroll", this.onScroll);
+        this.cm.on("change", debounce(this.onKeyPressed, 200));
+        this.cm.on("scroll", this._emitScrollEvent);
         this.cm.on("viewportChange", this.onViewportChange);
     };
 
     View.prototype.destroyEvents = function() {
-        this.cm.off("change", debounce(this.onKeyPressed, 300));
-        this.cm.off("scroll", this.onScroll);
+        this.cm.off("change", debounce(this.onKeyPressed, 200));
+        this.cm.off("scroll", this._emitScrollEvent);
         this.cm.off("viewportChange", this.onViewportChange);
+    };
+    
+    View.prototype._emitScrollEvent = function() {
+        if (this.emitScrollEvents && typeof this.onScroll == "function") {
+            this.onScroll();
+        }
     };
 
     View.prototype.markLine = function(line, className) {
@@ -185,13 +193,11 @@ define(function (require, exports, module){
         }, {
             line: to.line + offset,
             ch: to.ch
-        }, {
-            className: className
-        });
+        }, { className: className });
     };
     
-    View.prototype.unmarkText = function() {
-    
+    View.prototype.unmarkAllText = function(marker) {
+        $("." + marker).removeClass(marker); 
     };
 
     View.prototype.refresh = function() {
@@ -221,7 +227,12 @@ define(function (require, exports, module){
     };
 
     View.prototype.render = function(layout) {
-        return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text, layout: layout });
+        return Mustache.render(templateString, { 
+            id: this.id, 
+            title: this.title, 
+            text: this.text, 
+            layout: layout 
+        });
     };
 
     exports.CompareView = View;

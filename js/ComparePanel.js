@@ -8,6 +8,7 @@ define(function (require, exports, module) {
         ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils"),
         EditorManager   =   brackets.getModule("editor/EditorManager"),
         ResizerPanel    =   brackets.getModule("utils/Resizer"),
+        Sidebar         =   brackets.getModule("project/SidebarView"),
         statusBar       =   brackets.getModule("widgets/StatusBar");
     
     var COMPARE_PANEL   =   "compare.panel";
@@ -79,6 +80,14 @@ define(function (require, exports, module) {
         statusInfoPanel.innerHTML = content;
     };
     
+    Panel.prototype.showSidebar = function() {
+        Sidebar.show();
+    };
+    
+    Panel.prototype.hideSidebar = function() {
+        Sidebar.hide();
+    };
+    
     Panel.prototype.showBusy = function() {
         statusBar.showBusyIndicator(true);
     };
@@ -136,6 +145,7 @@ define(function (require, exports, module) {
     
     Panel.prototype.show = function() {
         if (this.pane) {
+            this.hideSidebar();
             _hideEditor(); 
             _setHeight(this.$el);
             this.pane.show();
@@ -162,6 +172,7 @@ define(function (require, exports, module) {
     
     Panel.prototype.hide = function() {
         if (this.pane) {
+            this.showSidebar();
             _showEditor();
             this.pane.hide();
         }

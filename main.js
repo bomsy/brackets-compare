@@ -16,7 +16,8 @@ define(function (require, exports, module) {
 
         CMD_COMPARE         =   "command.compare",
         CMD_LAYOUT          =   "command.layout",
-        CMD_STICKYVIEWS      =   "command.strickyViews";
+        CMD_HIDEVIEW        =   "command.hideview",
+        CMD_STICKYVIEWS     =   "command.strickyViews";
 
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
@@ -50,6 +51,16 @@ define(function (require, exports, module) {
                 });
             return result.promise();
         }
+        
+        // Notifies when a function has delayed triggering
+        function _setTrigger(fn, delay, trigger) {
+          var timer = null;
+          return function() {
+            clearTimeout(timer);
+            fn.apply(this, arguments);
+            timer = setTimeout(trigger, delay);
+          };
+        }
 
         function _markViews(o, n) {
             oldView.clearGutter();
@@ -77,6 +88,7 @@ define(function (require, exports, module) {
         }
             
         function _markChars(o, n, r) {
+            oldView.unmarkAllText(CompareView.markers.removedChars);
             for (var i = 0; i < o.length; i++) {
                 if (o[i].status == -1) {
                     oldView.markText({
@@ -89,6 +101,7 @@ define(function (require, exports, module) {
                 }
             }
             
+            newView.unmarkAllText(CompareView.markers.addedChars);
             for (var j = 0; j < n.length; j++) {
                 if (n[j].status == 1) {
                     newView.markText({
@@ -113,7 +126,6 @@ define(function (require, exports, module) {
 
         function _onLayoutChange() {
             gblShowInVerticalView = !gblShowInVerticalView;
-            panel.setLayout(gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal);
             CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
         }
 
@@ -136,6 +148,11 @@ define(function (require, exports, module) {
         function _onStickViews() {
 
         }
+        
+        function _onPanelHidden() {
+            CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
+            _onCurrentDocumentChange();
+        }
 
         function _onCompareViews() {
             if(panel !== null) {
@@ -144,6 +161,8 @@ define(function (require, exports, module) {
             panel = new ComparePanel({
                 layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal
             });
+            
+            CommandManager.get(CMD_HIDEVIEW).setEnabled(true);
 
             // Setup listener for worker
             worker.addEventListener("message", _onWorkerMessage, false);
@@ -156,17 +175,21 @@ define(function (require, exports, module) {
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
-                onKeyPressed: _onViewKeyPressed,
-                onScroll: function() {
-                    var o = this.getScrollInfo();
-                    newView.scrollIntoView({
-                        left: 0,
-                        right: 0,
-                        top: o.top,
-                        bottom: newView.getScrollInfo().height
-                    });   
-                }
+                onKeyPressed: _onViewKeyPressed
             });
+            
+            oldView.onScroll = _setTrigger(function() { 
+                var o = this.getScrollInfo();
+                newView.emitScrollEvents = false;
+                newView.scrollIntoView({
+                    left: 0,
+                    right: 0,
+                    top: o.top,
+                    bottom: newView.getScrollInfo().height
+                });   
+            }, 200, function(){ 
+                newView.emitScrollEvents = true;
+            })
 
             panel.addView(oldView);
 
@@ -188,17 +211,21 @@ define(function (require, exports, module) {
                     title: extFile.name,
                     text: text,
                     mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
-                    onKeyPressed: _onViewKeyPressed,
-                    onScroll: function() {
-                        var o = this.getScrollInfo();
-                        oldView.scrollIntoView({
-                            left: 0,
-                            right: 0,
-                            top: o.top,
-                            bottom: oldView.getScrollInfo().height
-                        });   
-                    }
+                    onKeyPressed: _onViewKeyPressed
                 });
+                
+                newView.onScroll = _setTrigger(function() {
+                    var o = this.getScrollInfo();
+                    oldView.emitScrollEvents = false;
+                    oldView.scrollIntoView({
+                        left: 0,
+                        right: 0,
+                        top: o.top,
+                        bottom: oldView.getScrollInfo().height
+                    });
+                }, 200, function() {
+                    oldView.emitScrollEvents = true;
+                })
 
                 panel.addView(newView);
                 panel.load();
@@ -210,25 +237,27 @@ define(function (require, exports, module) {
 
         // Command register
         CommandManager.register("Compare with...", CMD_COMPARE, _onCompareViews);
-        CommandManager.register("Show Diffs Vertically", CMD_LAYOUT, _onLayoutChange);
-        CommandManager.register("Sticky Diffs Views", CMD_STICKYVIEWS, _onStickViews);
+        
+        CommandManager.register("Show Compare Vertically", CMD_LAYOUT, _onLayoutChange);
+        CommandManager.register("Turn off Sticky Views", CMD_STICKYVIEWS, _onStickViews);
+        CommandManager.register("Hide Compare View", CMD_HIDEVIEW, _onPanelHidden);
 
         // Events
         $(DocumentManager).on("currentDocumentChange", _onCurrentDocumentChange);
 
-        // Menus
+        //Add to the view menus
         viewMenu.addMenuDivider();
         viewMenu.addMenuItem(CMD_LAYOUT);
         viewMenu.addMenuItem(CMD_STICKYVIEWS);
+        viewMenu.addMenuItem(CMD_HIDEVIEW);
 
         CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
+        CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
 
         projectMenu.addMenuDivider();
         projectMenu.addMenuItem(CMD_COMPARE);
 
         workingSetMenu.addMenuDivider();
         workingSetMenu.addMenuItem(CMD_COMPARE);
-        
-        exports.fake = {};
     });
 });

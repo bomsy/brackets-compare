@@ -30,7 +30,7 @@
     padding: 1px 1px 1px 1px;
 }
 .added-line {
-    border-top: 1px dotted #CEFCEA;
+    border-top: 1px solid #45FDB7;
     padding: 2px 1px 2px 1px;
     width: 100%;
 }
@@ -44,7 +44,7 @@
     padding: 1px 1px 1px 1px;
 }
 .removed-line {
-    border-top: 1px dotted #FCCEDB;
+    border-top: 1px solid #FFAFC6;
     padding: 2px 1px 2px 1px;
     width: 100%;
 }

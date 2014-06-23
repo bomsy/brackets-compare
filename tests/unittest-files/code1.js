@@ -18,7 +18,7 @@ define(function (require, exports, module) {
         this.lineNumbers = options.lineNumbers || true;
         this.lineWrapping = options.lineWrapping || true;
         this.mode = options.mode || View.MODES["js"];
-        this.cm = null; // Codemirror instance
+        this.cm = null;
         
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
