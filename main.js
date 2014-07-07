@@ -8,6 +8,7 @@ define(function (require, exports, module) {
         ExtensionUtils   =   brackets.getModule("utils/ExtensionUtils"),
         CommandManager   =   brackets.getModule("command/CommandManager"),
         DocumentManager  =   brackets.getModule("document/DocumentManager"),
+        Document         =   brackets.getModule("document/Document"),
         EditorManager    =   brackets.getModule("editor/EditorManager"),
         Menus            =   brackets.getModule("command/Menus"),
         FileSystem       =   brackets.getModule("filesystem/FileSystem"),
@@ -26,7 +27,9 @@ define(function (require, exports, module) {
         gblStickyViews         = false;
 
     AppInit.appReady(function() {
+        //ExtensionUtils.loadStyleSheet(module, "libs/bootstrap/css/bootstrap.css");
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
+        
         var oldView = null ,
             newView = null,
             panel = null;
@@ -130,9 +133,7 @@ define(function (require, exports, module) {
         }
 
         function _onCurrentDocumentChange() {
-            if(panel !== null) {
-                panel.destroy();
-            }
+            panel.destroy();
             worker.removeEventListener("message", _onWorkerMessage, false);
         }
 
@@ -141,25 +142,34 @@ define(function (require, exports, module) {
         }
         
         function _runWorker() {
-            worker.postMessage({ mode: 0, o: oldView.getText(), n: newView.getText() });
-            worker.postMessage({ mode: 1, o: oldView.getText(), n: newView.getText() });
+            worker.postMessage({ 
+                mode: 0, 
+                o: oldView.getText(), 
+                n: newView.getText() 
+            });
+            worker.postMessage({ 
+                mode: 1, 
+                o: oldView.getText(), 
+                n: newView.getText() 
+            });
         }
 
         function _onStickViews() {
 
         }
         
-        function _onPanelHidden() {
+        function _onMenuCloseViews() {
             CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
-            _onCurrentDocumentChange();
+            panel.destroy();
         }
 
-        function _onCompareViews() {
-            if(panel !== null) {
-                panel.destroy();
-            }
+        function _onShowCompareViews() {
             panel = new ComparePanel({
-                layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal
+                layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal,
+                onDestroyed: function() {
+                    console.log("destroyed")
+                    worker.removeEventListener("message", _onWorkerMessage, false);
+                }
             });
             
             CommandManager.get(CMD_HIDEVIEW).setEnabled(true);
@@ -174,8 +184,19 @@ define(function (require, exports, module) {
                 id: "old-viewer",
                 title: _currentDoc.file.name,
                 text: _currentDoc.getText(),
+                file: _currentDoc.file,
                 mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
-                onKeyPressed: _onViewKeyPressed
+                onKeyPressed: _onViewKeyPressed,
+                onFocus: function() {
+                    //set as focused view
+                    panel.currentView = this;
+                },
+                onBlur: function() {
+                    panel.currentView = null;
+                },
+                onFileSave: function() {
+                    console.log(this.id + " file saved.");
+                }
             });
             
             oldView.onScroll = _setTrigger(function() { 
@@ -210,8 +231,18 @@ define(function (require, exports, module) {
                     id: "new-viewer",
                     title: extFile.name,
                     text: text,
+                    file: FileSystem.getFileForPath(extFile.fullPath),
                     mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
-                    onKeyPressed: _onViewKeyPressed
+                    onKeyPressed: _onViewKeyPressed,
+                    onFocus: function() {
+                        panel.currentView = this;
+                    },
+                    onBlur: function() {
+                        panel.currentView = null;
+                    },
+                    onFileSave: function() {
+                        console.log(this.id + " file saved.");
+                    }
                 });
                 
                 newView.onScroll = _setTrigger(function() {
@@ -236,14 +267,14 @@ define(function (require, exports, module) {
         }
 
         // Command register
-        CommandManager.register("Compare with...", CMD_COMPARE, _onCompareViews);
+        CommandManager.register("Compare with...", CMD_COMPARE, _onShowCompareViews);
         
         CommandManager.register("Show Compare Vertically", CMD_LAYOUT, _onLayoutChange);
         CommandManager.register("Turn off Sticky Views", CMD_STICKYVIEWS, _onStickViews);
-        CommandManager.register("Hide Compare View", CMD_HIDEVIEW, _onPanelHidden);
+        CommandManager.register("Close Compare Views", CMD_HIDEVIEW, _onMenuCloseViews);
 
         // Events
-        $(DocumentManager).on("currentDocumentChange", _onCurrentDocumentChange);
+        //$(DocumentManager).on("currentDocumentChange", _onCurrentDocumentChange);
 
         //Add to the view menus
         viewMenu.addMenuDivider();

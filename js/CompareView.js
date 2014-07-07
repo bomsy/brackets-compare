@@ -2,8 +2,11 @@
 /*global define, $, brackets, Mustache */
 
 /** Simple extension that adds a "File > Hello World" menu item. Inserts "Hello, world!" at cursor pos. */
-define(function (require, exports, module){
+define(function (require, exports, module) {
     "use strict";
+    var FileUtils = brackets.getModule("file/FileUtils"),
+        DocumentManager = brackets.getModule("document/DocumentManager");
+    
     var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
     var templateString = "<div id='{{ id }}-editor-{{ layout}}' class='compare-editor-{{ layout }}'>" +
                             "<textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>" +
@@ -40,6 +43,12 @@ define(function (require, exports, module){
         }
         return o;
     }
+    
+    function saveFileToDisk(file, text, force) {
+        // We don't want normalized line endings, so it's important to pass true to getText()
+        // returns a promise
+        return FileUtils.writeText(file, text, force);
+    }
 
     function View(options) {
         this.id = options.id;
@@ -48,19 +57,33 @@ define(function (require, exports, module){
         this.lineNumbers = options.lineNumbers || true;
         this.lineWrapping = options.lineWrapping || true;
         this.mode = options.mode || View.MODES.js;
+        
+        // Brackets file object
+        this.file = options.file || null;
+        console.log(this.file);
+        this.doc = null;
+        // Codemirror  object
         this.cm = null;
+        
+        // 
         this.emitScrollEvents = true;
-
         this.markedLines = {};
 
         // Events
         this.onKeyPressed = options.onKeyPressed || function() {};
         this.onScroll = options.onScroll || function() { };
         this.onViewportChange = options.onViewportChange || function() {};
+        this.onFocus = options.onFocus || function() {};
+        this.onBlur = options.onBlur || function() {};
+        this.onFileSave = options.onFileSave || function() {};
 
         this.onKeyPressed = this.onKeyPressed.bind(this);
         this.onScroll = this.onScroll.bind(this);
         this.onViewportChange = this.onViewportChange.bind(this);
+        this.onFocus = this.onFocus.bind(this);
+        this.onBlur = this.onBlur.bind(this);
+        this.onFileSave = this.onFileSave.bind(this);
+        
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
         this.refresh = this.refresh.bind(this);
@@ -70,7 +93,9 @@ define(function (require, exports, module){
         this.markGutter = this.markGutter.bind(this);
         this.removeAllLines = this.removeAllLines.bind(this);
         this.scrollIntoView = this.scrollIntoView.bind(this);
+        
         this._emitScrollEvent = this._emitScrollEvent.bind(this);
+        
         this.initialize();
     }
 
@@ -107,6 +132,7 @@ define(function (require, exports, module){
 
     View.prototype.initialize = function() {
         this.setText(this.text);
+        //this.setDocument(this.file);
     };
 
     View.prototype.load = function() {
@@ -123,12 +149,16 @@ define(function (require, exports, module){
         this.cm.on("change", debounce(this.onKeyPressed, 200));
         this.cm.on("scroll", this._emitScrollEvent);
         this.cm.on("viewportChange", this.onViewportChange);
+        this.cm.on("focus", this.onFocus);
+        this.cm.on("blur", this.onBlur);
     };
 
     View.prototype.destroyEvents = function() {
         this.cm.off("change", debounce(this.onKeyPressed, 200));
         this.cm.off("scroll", this._emitScrollEvent);
         this.cm.off("viewportChange", this.onViewportChange);
+        this.cm.off("focus", this.onFocus);
+        this.cm.off("blur", this.onBlur);
     };
     
     View.prototype._emitScrollEvent = function() {
@@ -142,6 +172,15 @@ define(function (require, exports, module){
         if (!this.markedLines[line]) {
             this.markedLines[line] = mark;
         }
+    };
+    
+    // Sets up a brackets document
+    View.prototype.setDocument = function(file){
+        var promise = DocumentManager.getDocumentForPath(file.fullPath)
+            .done(function(doc) { 
+                this.doc = doc;
+                console.log(this.doc);
+            });
     };
     /**
      * Scrolls  the view based of the data objects passed in
@@ -214,6 +253,14 @@ define(function (require, exports, module){
 
     View.prototype.getText = function() {
         return this.cm ? this.cm.getValue() : "";
+    };
+    
+    View.prototype.saveFile = function() {
+        saveFileToDisk(this.file, this.getText(), true)
+            .done(this.onFileSave)
+            .fail(function (err) {
+                console.log(err);
+            });
     };
 
     View.prototype.destroy = function() {

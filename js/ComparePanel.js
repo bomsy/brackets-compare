@@ -27,26 +27,44 @@ define(function (require, exports, module) {
         });
         return Math.max($avlHeight, 0);
     }
+    
+    function _addToolbarButton(id, tooltip, icon, handler) {
+        var html = "<a href='#' id='" + id + "' title='" + 
+            tooltip +"'> <span class='glyphicon glyphicon-" + icon + "'></span></a>";
+        $("#main-toolbar .buttons").append(html);
+        $("#" + id).on("click", handler);
+    }
+    
+    function _removeToolbarButton(id, handler) {
+        $("#" + id).off("click", handler);
+        $("#" + id).remove();
+    }
 
     function _setHeight($el) {
         $el.height(_calcElHeight($el));
     }
     
-    function _showEditor() {
+    function _showCurrentEditor() {
         $("#editor-holder").show();
     }
     
-    function _hideEditor() {
+    function _hideCurrentEditor() {
        $("#editor-holder").hide(); 
-    }
-    
+    }    
     
     function Panel(options) {
+        // The current focused view
+        this.currentView = null;
+        
         this.views = [];
         this.pane = null;
         this.$el = null;
         this.parent = null;
         this.layout = options.layout || Panel.layouts["horizontal"];
+        
+        //event handlers
+        this.onLoaded = options.onLoaded || null;
+        this.onDestroyed = options.onDestroyed || null;
         
         this.addView = this.addView.bind(this);
         this.loadViews = this.loadViews.bind(this);
@@ -59,6 +77,9 @@ define(function (require, exports, module) {
         this.destroy = this.destroy.bind(this);
         this.onResize = this.onResize.bind(this);
         this.bindEvents = this.bindEvents.bind(this);
+        
+        this.toolbarCloseClick = this.toolbarCloseClick.bind(this);
+        this.toolbarSaveClick = this.toolbarSaveClick.bind(this);
         
         this.initialize();
     };
@@ -96,6 +117,32 @@ define(function (require, exports, module) {
         statusBar.hideBusyIndicator();
     };
     
+    Panel.prototype.toolbarCloseClick = function() {
+        this.destroy();
+    };
+    
+    Panel.prototype.toolbarSaveClick = function() {
+        var force = true;
+        if (this.currentView) {
+            this.currentView.saveFile();
+        } else {
+            // save all the view files
+            for (var i = 0, len = this.views.length; i < len; i++) {
+                this.views[i].saveFile(); 
+            }
+        }
+    };
+    
+    Panel.prototype.loadToolbarButtons = function() {
+        _addToolbarButton("compare-save", "Save file(s)", "floppy-save", this.toolbarSaveClick);
+        _addToolbarButton("compare-hide", "Close views", "remove", this.toolbarCloseClick);
+    };
+    
+    Panel.prototype.unloadToolbarButtons = function(){
+        _removeToolbarButton("compare-save", this.toolbarSaveClick);
+        _removeToolbarButton("compare-hide", this.toolbarCloseClick);
+    };
+    
     Panel.prototype.setLayout = function(layout) {
         this.layout = layout;
     };
@@ -119,6 +166,10 @@ define(function (require, exports, module) {
     Panel.prototype.load = function() {
         this.renderViews();
         this.loadViews();
+        this.loadToolbarButtons();
+        if (this.onLoaded) {
+            this.onLoaded(this);
+        }
     };
     
     Panel.prototype.addView = function(editorView) {
@@ -146,7 +197,7 @@ define(function (require, exports, module) {
     Panel.prototype.show = function() {
         if (this.pane) {
             this.hideSidebar();
-            _hideEditor(); 
+            _hideCurrentEditor(); 
             _setHeight(this.$el);
             this.pane.show();
             this.refreshViews();
@@ -155,14 +206,16 @@ define(function (require, exports, module) {
     
     Panel.prototype.destroy = function() {
         this.hide();
-        
+        this.unloadToolbarButtons();
         window.removeEventListener("resize", this.onResize);
         for (var i = 0, len = this.views.length; i < len; i++) {
             this.views[i].destroy(); 
         }
         console.log(cacheStatusInfo);
         statusInfoPanel.innerText = cacheStatusInfo;
-        
+        if (this.onDestroyed) {
+            this.onDestroyed();
+        }
         this.remove();
         this.views = [];
         this.$el = null;
@@ -173,7 +226,7 @@ define(function (require, exports, module) {
     Panel.prototype.hide = function() {
         if (this.pane) {
             this.showSidebar();
-            _showEditor();
+            _showCurrentEditor();
             this.pane.hide();
         }
     };
