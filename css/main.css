@@ -1,7 +1,12 @@
+/*
+* Brackets-compare
+*
+* Thanks to Glyphicons http://glyphicons.com/
+*/
+
 #compare-panel {
     position: relative;
 }
-
 #compare-panel .compare-editor-horizontal {
     height: 50%;
 }

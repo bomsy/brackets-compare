@@ -134,13 +134,15 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.loadToolbarButtons = function() {
-        _addToolbarButton("compare-save", "Save file(s)", "floppy-save", this.toolbarSaveClick);
-        _addToolbarButton("compare-hide", "Close views", "remove", this.toolbarCloseClick);
+        _addToolbarButton("compare-save", "Save compare file(s)", "floppy-disk", this.toolbarSaveClick);
+        _addToolbarButton("compare-hide", "Turn off compare views", "off", this.toolbarCloseClick);
+        _addToolbarButton("compare-sticky", "Turn off sticky views", "flash", function(){});
     };
     
     Panel.prototype.unloadToolbarButtons = function(){
         _removeToolbarButton("compare-save", this.toolbarSaveClick);
         _removeToolbarButton("compare-hide", this.toolbarCloseClick);
+        _removeToolbarButton("compare-sticky", function(){});
     };
     
     Panel.prototype.setLayout = function(layout) {

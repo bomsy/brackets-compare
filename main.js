@@ -189,7 +189,7 @@ define(function (require, exports, module) {
                 onKeyPressed: _onViewKeyPressed,
                 onFocus: function() {
                     //set as focused view
-                    panel.currentView = this;
+                    panel.currentView = oldView;
                 },
                 onBlur: function() {
                     panel.currentView = null;
@@ -235,7 +235,7 @@ define(function (require, exports, module) {
                     mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
                     onKeyPressed: _onViewKeyPressed,
                     onFocus: function() {
-                        panel.currentView = this;
+                        panel.currentView = newView;
                     },
                     onBlur: function() {
                         panel.currentView = null;

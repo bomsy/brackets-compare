@@ -5,7 +5,7 @@
 define(function (require, exports, module) {  
     "use strict";
     var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
-    var stemplateString = "<div id='{{ id }}-editor'class='compare-editor'>\
+    var templateString = "<div id='{{ id }}-editor'class='compare-editor'>\
                             <textarea id='{{ id }}-area' class='compare-content'>{{ text }}</textarea>\
                             <!--<div id='' class='compare-status'> {{ title }} </div>--> \
                          </div>";
