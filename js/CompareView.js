@@ -146,7 +146,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.loadEvents = function() {
-        this.cm.on("change", debounce(this.onKeyPressed, 200));
+        this.cm.on("change", debounce(this.onKeyPressed, 100));
         this.cm.on("scroll", this._emitScrollEvent);
         this.cm.on("viewportChange", this.onViewportChange);
         this.cm.on("focus", this.onFocus);
@@ -154,7 +154,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.destroyEvents = function() {
-        this.cm.off("change", debounce(this.onKeyPressed, 200));
+        this.cm.off("change", debounce(this.onKeyPressed, 100));
         this.cm.off("scroll", this._emitScrollEvent);
         this.cm.off("viewportChange", this.onViewportChange);
         this.cm.off("focus", this.onFocus);

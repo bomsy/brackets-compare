@@ -16,12 +16,15 @@
     float: left;
 }
 
-.compare-panel .cm-s-default {
+.compare-panel .cm-s-light-theme {
+    height: 100%;
+}
+.compare-panel .cm-s-dark-theme {
     height: 100%;
 }
 
-#new-viewer-editor-horizontal .cm-s-default {
-    border-top: 1px dashed #888; 
+#new-viewer-editor-horizontal .cm-s-light-theme {
+    border-top: 1px dashed #888;
 }
 
 /* Markers */

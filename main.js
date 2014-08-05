@@ -1,5 +1,12 @@
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 4, maxerr: 50 */
 /*global define, $, brackets */
+require.config({
+    paths: {
+        "text" : "lib/text",
+        "i18n" : "lib/i18n"
+    },
+    locale: brackets.getLocale()
+});
 
 /** Simple extension that adds a "File > Hello World" menu item. Inserts "Hello, world!" at cursor pos. */
 define(function (require, exports, module) {
@@ -14,6 +21,7 @@ define(function (require, exports, module) {
         FileSystem       =   brackets.getModule("filesystem/FileSystem"),
         FileUtils        =   brackets.getModule("file/FileUtils"),
         NodeDomain       =   brackets.getModule("utils/NodeDomain"),
+        Strings          =   require("strings"),
 
         CMD_COMPARE         =   "command.compare",
         CMD_LAYOUT          =   "command.layout",
@@ -23,11 +31,13 @@ define(function (require, exports, module) {
     var ComparePanel = require("js/ComparePanel").ComparePanel,
         CompareView = require("js/CompareView").CompareView;
 
-    var gblShowInVerticalView  = true, // False shows in horizontal view
+    // False shows in horizontal view
+    var gblShowInVerticalView  = true, 
+        
+    // Global for handling sticky scrolling of the diff views
         gblStickyViews         = false;
 
     AppInit.appReady(function() {
-        //ExtensionUtils.loadStyleSheet(module, "libs/bootstrap/css/bootstrap.css");
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
         
         var oldView = null ,
@@ -35,14 +45,19 @@ define(function (require, exports, module) {
             panel = null;
 
         var workerPath = ExtensionUtils.getModulePath(module, "js/worker/compare-worker.js");
-        var worker = new Worker(workerPath);
-
-        var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
+        // Seperate workers for handling line and character diffs
+        // Are there perf improvements ???
+        var lineWorker = new Worker(workerPath);
+        var charWorker = new Worker(workerPath);
+        
+        // Load menus
+        var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);        
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
         var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
 
-        // wrapper around FileSystem.showOpenDialog which returns a promise instead.
-        function _fsShowOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
+        // Wrapper around FileSystem.showOpenDialog 
+        // which returns a promise instead.      
+        function _showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
             var result = new $.Deferred();
             FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
                 function(err, data) {
@@ -55,17 +70,20 @@ define(function (require, exports, module) {
             return result.promise();
         }
         
-        // Notifies when a function has delayed triggering
-        function _setTrigger(fn, delay, trigger) {
+        // Fires the trigger when fn does not fire
+        // within the threshold period
+        // (Used to notify when scrolling on the views have stopped,
+        // preventing Circular referencing when sticking views)
+        function _setTrigger(fn, threshold, trigger) {
           var timer = null;
           return function() {
             clearTimeout(timer);
             fn.apply(this, arguments);
-            timer = setTimeout(trigger, delay);
+            timer = setTimeout(trigger, threshold);
           };
         }
 
-        function _markViews(o, n) {
+        function _markLines(o, n) {
             oldView.clearGutter();
             newView.clearGutter();
             oldView.removeAllLines();
@@ -121,7 +139,7 @@ define(function (require, exports, module) {
         function _onWorkerMessage(e) {
             var data = e.data;
             if (data.mode == 0) {
-                _markViews(data.old, data.new);
+                _markLines(data.old, data.new);
             } else {
                 _markChars(data.old, data.new, data.raw);
             }
@@ -134,20 +152,21 @@ define(function (require, exports, module) {
 
         function _onCurrentDocumentChange() {
             panel.destroy();
-            worker.removeEventListener("message", _onWorkerMessage, false);
+            lineWorker.removeEventListener("message", _onWorkerMessage, false);
+            charWorker.removeEventListener("message", _onWorkerMessage, false);
         }
 
         function _onViewKeyPressed(editor, e) {
-            _runWorker();
+            _runWorkers();
         }
         
-        function _runWorker() {
-            worker.postMessage({ 
+        function _runWorkers() {
+            lineWorker.postMessage({ 
                 mode: 0, 
                 o: oldView.getText(), 
                 n: newView.getText() 
             });
-            worker.postMessage({ 
+            charWorker.postMessage({ 
                 mode: 1, 
                 o: oldView.getText(), 
                 n: newView.getText() 
@@ -162,21 +181,24 @@ define(function (require, exports, module) {
             CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
             panel.destroy();
         }
-
+        
+        // Creates the panels, views and runs the workers 
         function _onShowCompareViews() {
             panel = new ComparePanel({
                 layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal,
                 onDestroyed: function() {
                     console.log("destroyed")
-                    worker.removeEventListener("message", _onWorkerMessage, false);
+                    lineWorker.removeEventListener("message", _onWorkerMessage, false);
+                    charWorker.removeEventListener("message", _onWorkerMessage, false);
                 }
             });
             
             CommandManager.get(CMD_HIDEVIEW).setEnabled(true);
 
             // Setup listener for worker
-            worker.addEventListener("message", _onWorkerMessage, false);
-
+            lineWorker.addEventListener("message", _onWorkerMessage, false);
+            charWorker.addEventListener("message", _onWorkerMessage, false);
+            
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
 
@@ -214,7 +236,7 @@ define(function (require, exports, module) {
 
             panel.addView(oldView);
 
-            _fsShowOpenDialog( false, false, "Choose a file...", "", "")
+            _showOpenDialog( false, false, Strings.CHOOSE_FILE, "", "")
             .then(function(path) {
                 var r = new $.Deferred();
                 extFile = FileSystem.getFileForPath(path);
@@ -262,16 +284,16 @@ define(function (require, exports, module) {
                 panel.load();
                 panel.show();
 
-                _runWorker();
+                _runWorkers();
             });
         }
 
         // Command register
-        CommandManager.register("Compare with...", CMD_COMPARE, _onShowCompareViews);
+        CommandManager.register(Strings.COMPARE_WITH, CMD_COMPARE, _onShowCompareViews);
         
         CommandManager.register("Show Compare Vertically", CMD_LAYOUT, _onLayoutChange);
         CommandManager.register("Turn off Sticky Views", CMD_STICKYVIEWS, _onStickViews);
-        CommandManager.register("Close Compare Views", CMD_HIDEVIEW, _onMenuCloseViews);
+        CommandManager.register(Strings.CLOSE_VIEWS, CMD_HIDEVIEW, _onMenuCloseViews);
 
         // Events
         //$(DocumentManager).on("currentDocumentChange", _onCurrentDocumentChange);

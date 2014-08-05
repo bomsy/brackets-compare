@@ -18,7 +18,7 @@ define(function (require, exports, module) {
         this.lineNumbers = options.lineNumbers || true;
         this.lineWrapping = options.lineWrapping || true;
         this.mode = options.mode || View.MODES["js"];
-        this.cm = null; // Codemirror instance
+        this.cm = null;
         
         this.initialize = this.initialize.bind(this);
         this.load   = this.load.bind(this);
@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     View.MODES = {
         html : "text/html",
         css  : "css",
-        js   : "php" 
+        js   : "javascript" 
     };
     View.prototype.initialize = function() {
         this.setText(this.text);

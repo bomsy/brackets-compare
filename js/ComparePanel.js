@@ -9,7 +9,8 @@ define(function (require, exports, module) {
         EditorManager   =   brackets.getModule("editor/EditorManager"),
         ResizerPanel    =   brackets.getModule("utils/Resizer"),
         Sidebar         =   brackets.getModule("project/SidebarView"),
-        statusBar       =   brackets.getModule("widgets/StatusBar");
+        statusBar       =   brackets.getModule("widgets/StatusBar"),
+        Strings         =   require("../strings");
     
     var COMPARE_PANEL   =   "compare.panel";
     var statusInfoPanel = document.querySelector("#status-info");
@@ -134,15 +135,15 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.loadToolbarButtons = function() {
-        _addToolbarButton("compare-save", "Save compare file(s)", "floppy-disk", this.toolbarSaveClick);
-        _addToolbarButton("compare-hide", "Turn off compare views", "off", this.toolbarCloseClick);
-        _addToolbarButton("compare-sticky", "Turn off sticky views", "flash", function(){});
+        _addToolbarButton("compare-save", Strings.SAVE_FILES, "floppy-disk", this.toolbarSaveClick);
+        _addToolbarButton("compare-hide", Strings.CLOSE_VIEWS, "off", this.toolbarCloseClick);
+        //_addToolbarButton("compare-sticky", "Turn off sticky views", "flash", function(){});
     };
     
     Panel.prototype.unloadToolbarButtons = function(){
         _removeToolbarButton("compare-save", this.toolbarSaveClick);
         _removeToolbarButton("compare-hide", this.toolbarCloseClick);
-        _removeToolbarButton("compare-sticky", function(){});
+        //_removeToolbarButton("compare-sticky", function(){});
     };
     
     Panel.prototype.setLayout = function(layout) {
