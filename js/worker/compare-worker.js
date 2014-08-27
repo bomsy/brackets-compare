@@ -182,11 +182,10 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         var data = e.data;
         var diffs;
         var d;
-        if(data.mode == 0) {
-            diffs = diffLines(data.o, data.n);
+        diffs = diffLines(data.o, data.n);
+        if (data.mode == 0) {
             d = lineAnalysis(diffs);
         } else {
-            diffs = diffWords(data.o, data.n);
             d = wordAnalysis(diffs);
         }
         d.mode = data.mode;

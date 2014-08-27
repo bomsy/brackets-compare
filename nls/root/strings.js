@@ -4,10 +4,10 @@
 /*global define */
 
 define({
-    "COMPARE_WITH" : "Compare With ...",
-    "CHOOSE_FILE" : "Choose a file ...",
+    "COMPARE_WITH" : "Compare With...",
+    "CHOOSE_FILE" : "Choose a file...",
     "SAVE_FILES" : "Save file(s)",
-    "CLOSE_VIEWS" : "Close Diff Views",
+    "CLOSE_VIEWS" : "Exit Diffs",
     "STICK" : "Stick Views",
     "UNSTICK": "Unstick Views"
 });

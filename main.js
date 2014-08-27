@@ -32,14 +32,14 @@ define(function (require, exports, module) {
         CompareView = require("js/CompareView").CompareView;
 
     // False shows in horizontal view
-    var gblShowInVerticalView  = true, 
-        
+    var gblShowInVerticalView  = true,
+
     // Global for handling sticky scrolling of the diff views
         gblStickyViews         = false;
 
     AppInit.appReady(function() {
         ExtensionUtils.loadStyleSheet(module, "css/main.css");
-        
+
         var oldView = null ,
             newView = null,
             panel = null;
@@ -49,14 +49,14 @@ define(function (require, exports, module) {
         // Are there perf improvements ???
         var lineWorker = new Worker(workerPath);
         var charWorker = new Worker(workerPath);
-        
+
         // Load menus
-        var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);        
+        var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
         var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
 
-        // Wrapper around FileSystem.showOpenDialog 
-        // which returns a promise instead.      
+        // Wrapper around FileSystem.showOpenDialog
+        // which returns a promise instead.
         function _showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
             var result = new $.Deferred();
             FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
@@ -69,7 +69,7 @@ define(function (require, exports, module) {
                 });
             return result.promise();
         }
-        
+
         // Fires the trigger when fn does not fire
         // within the threshold period
         // (Used to notify when scrolling on the views have stopped,
@@ -93,11 +93,11 @@ define(function (require, exports, module) {
                 if (o[i].status === -1) {
                     lineMarker = CompareView.markers.removed;
                 } else {
-                    lineMarker = CompareView.markers.addedLine;    
+                    lineMarker = CompareView.markers.addedLine;
                 }
                 oldView.markLines(o[i].startLine, o[i].endLine, lineMarker);
             }
-            
+
             for (var j = 0; j < n.length; j++) {
                 if (n[j].status === 1) {
                     lineMarker = CompareView.markers.added;
@@ -107,7 +107,7 @@ define(function (require, exports, module) {
                 newView.markLines( n[j].startLine, n[j].endLine, lineMarker);
             }
         }
-            
+
         function _markChars(o, n, r) {
             oldView.unmarkAllText(CompareView.markers.removedChars);
             for (var i = 0; i < o.length; i++) {
@@ -121,7 +121,7 @@ define(function (require, exports, module) {
                     }, CompareView.markers.removedChars);
                 }
             }
-            
+
             newView.unmarkAllText(CompareView.markers.addedChars);
             for (var j = 0; j < n.length; j++) {
                 if (n[j].status == 1) {
@@ -132,16 +132,16 @@ define(function (require, exports, module) {
                         line: n[j].endLine,
                         ch: n[j].endChar
                     }, CompareView.markers.addedChars);
-                } 
+                }
             }
         }
 
         function _onWorkerMessage(e) {
             var data = e.data;
             if (data.mode == 0) {
-                _markLines(data.old, data.new);
+              _markLines(data.old, data.new);
             } else {
-                _markChars(data.old, data.new, data.raw);
+              //_markChars(data.old, data.new, data.raw);
             }
         }
 
@@ -153,52 +153,52 @@ define(function (require, exports, module) {
         function _onCurrentDocumentChange() {
             panel.destroy();
             lineWorker.removeEventListener("message", _onWorkerMessage, false);
-            charWorker.removeEventListener("message", _onWorkerMessage, false);
+            //charWorker.removeEventListener("message", _onWorkerMessage, false);
         }
 
         function _onViewKeyPressed(editor, e) {
             _runWorkers();
         }
-        
+
         function _runWorkers() {
-            lineWorker.postMessage({ 
-                mode: 0, 
-                o: oldView.getText(), 
-                n: newView.getText() 
+            lineWorker.postMessage({
+                mode: 0,
+                o: oldView.getText(),
+                n: newView.getText()
             });
-            charWorker.postMessage({ 
-                mode: 1, 
-                o: oldView.getText(), 
-                n: newView.getText() 
-            });
+            /*charWorker.postMessage({
+                mode: 1,
+                o: oldView.getText(),
+                n: newView.getText()
+            });*/
         }
 
         function _onStickViews() {
 
         }
-        
+
         function _onMenuCloseViews() {
             CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
             panel.destroy();
         }
-        
-        // Creates the panels, views and runs the workers 
+
+        // Creates the panels, views and runs the workers
         function _onShowCompareViews() {
             panel = new ComparePanel({
                 layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal,
                 onDestroyed: function() {
                     console.log("destroyed")
                     lineWorker.removeEventListener("message", _onWorkerMessage, false);
-                    charWorker.removeEventListener("message", _onWorkerMessage, false);
+                    //charWorker.removeEventListener("message", _onWorkerMessage, false);
                 }
             });
-            
+
             CommandManager.get(CMD_HIDEVIEW).setEnabled(true);
 
             // Setup listener for worker
             lineWorker.addEventListener("message", _onWorkerMessage, false);
             charWorker.addEventListener("message", _onWorkerMessage, false);
-            
+
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
 
@@ -220,8 +220,8 @@ define(function (require, exports, module) {
                     console.log(this.id + " file saved.");
                 }
             });
-            
-            oldView.onScroll = _setTrigger(function() { 
+
+            oldView.onScroll = _setTrigger(function() {
                 var o = this.getScrollInfo();
                 newView.emitScrollEvents = false;
                 newView.scrollIntoView({
@@ -229,8 +229,8 @@ define(function (require, exports, module) {
                     right: 0,
                     top: o.top,
                     bottom: newView.getScrollInfo().height
-                });   
-            }, 200, function(){ 
+                });
+            }, 200, function(){
                 newView.emitScrollEvents = true;
             })
 
@@ -266,7 +266,7 @@ define(function (require, exports, module) {
                         console.log(this.id + " file saved.");
                     }
                 });
-                
+
                 newView.onScroll = _setTrigger(function() {
                     var o = this.getScrollInfo();
                     oldView.emitScrollEvents = false;
@@ -290,7 +290,6 @@ define(function (require, exports, module) {
 
         // Command register
         CommandManager.register(Strings.COMPARE_WITH, CMD_COMPARE, _onShowCompareViews);
-        
         CommandManager.register("Show Compare Vertically", CMD_LAYOUT, _onLayoutChange);
         CommandManager.register("Turn off Sticky Views", CMD_STICKYVIEWS, _onStickViews);
         CommandManager.register(Strings.CLOSE_VIEWS, CMD_HIDEVIEW, _onMenuCloseViews);

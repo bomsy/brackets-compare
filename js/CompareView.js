@@ -5,7 +5,9 @@
 define(function (require, exports, module) {
     "use strict";
     var FileUtils = brackets.getModule("file/FileUtils"),
-        DocumentManager = brackets.getModule("document/DocumentManager");
+        DocumentManager = brackets.getModule("document/DocumentManager"),
+        ThemeView       =   brackets.getModule("view/ThemeView"),
+        ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils");
     
     var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
     var templateString = "<div id='{{ id }}-editor-{{ layout}}' class='compare-editor-{{ layout }}'>" +
@@ -49,7 +51,7 @@ define(function (require, exports, module) {
         // returns a promise
         return FileUtils.writeText(file, text, force);
     }
-
+    
     function View(options) {
         this.id = options.id;
         this.title = options.title || "";
@@ -243,6 +245,10 @@ define(function (require, exports, module) {
         if (this.cm) {
             this.cm.refresh();
         }
+    };
+    
+    View.prototype.setTheme = function() {
+        ThemeView.updateThemes(this.cm);
     };
 
     View.prototype.setText = function(text) {

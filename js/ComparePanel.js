@@ -10,11 +10,19 @@ define(function (require, exports, module) {
         ResizerPanel    =   brackets.getModule("utils/Resizer"),
         Sidebar         =   brackets.getModule("project/SidebarView"),
         statusBar       =   brackets.getModule("widgets/StatusBar"),
+        ThemeView       =   brackets.getModule("view/ThemeView"),
+        ThemeManager    =   brackets.getModule("view/ThemeManager"),
+        FileUtils       =   brackets.getModule("file/FileUtils"),
+        PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+        prefs = PreferencesManager.getExtensionPrefs("themes"),
         Strings         =   require("../strings");
     
     var COMPARE_PANEL   =   "compare.panel";
     var statusInfoPanel = document.querySelector("#status-info");
     var cacheStatusInfo = statusInfoPanel.innerText;
+    
+    var commentRegex = /\/\*([\s\S]*?)\*\//mg;
+    var stylesPath = FileUtils.getNativeBracketsDirectoryPath() + "/styles/";
         
     // Calculates size of the element to fill it containing container
     function _calcElHeight(el) {
@@ -51,11 +59,54 @@ define(function (require, exports, module) {
     
     function _hideCurrentEditor() {
        $("#editor-holder").hide(); 
-    }    
+    } 
+    
+    function fixPath(path) {
+        return path.replace(/^([A-Z]+:)?\//, function (match) {
+            return match.toLocaleLowerCase();
+        }); 
+    }
+    
+    function lessifyTheme(content, theme) {
+        var deferred = new $.Deferred();
+        var parser = new less.Parser({
+            rootpath: fixPath(stylesPath),
+            filename: fixPath(theme.file._path)
+        });
+        parser.parse("#compare-panel {" + content + "\n}", function (err, tree) {
+            if (err) {
+                deferred.reject(err);
+            } else {
+                deferred.resolve(tree.toCSS());
+            }
+        });
+        return deferred.promise();
+     }
+    
+    function loadCurrentTheme() {
+        var theme = ThemeManager.getCurrentTheme();
+        console.log(theme.file._path);
+        var pending = theme && FileUtils.readAsText(theme.file)
+        .then(function (lessContent) {
+            return lessifyTheme(lessContent.replace(commentRegex, ""), theme);
+        })
+        .then(function (style) {
+            // remove previous stylesheet
+            $("head > style").last().remove();    
+            return ExtensionUtils.addEmbeddedStyleSheet(style);
+        });
+        return $.when(pending);
+    }
+    
+    function loadTheme(callback) {
+        $.when(loadCurrentTheme())
+            .done(callback);
+    }
     
     function Panel(options) {
         // The current focused view
         this.currentView = null;
+        this.currentThemeLoaded = false;
         
         this.views = [];
         this.pane = null;
@@ -78,6 +129,7 @@ define(function (require, exports, module) {
         this.destroy = this.destroy.bind(this);
         this.onResize = this.onResize.bind(this);
         this.bindEvents = this.bindEvents.bind(this);
+        this.setViewsTheme = this.setViewsTheme.bind(this);
         
         this.toolbarCloseClick = this.toolbarCloseClick.bind(this);
         this.toolbarSaveClick = this.toolbarSaveClick.bind(this);
@@ -91,7 +143,7 @@ define(function (require, exports, module) {
     }; 
     
     Panel.prototype.initialize = function() {
-       
+
     };
     
     Panel.prototype.onResize = function()  {
@@ -160,6 +212,12 @@ define(function (require, exports, module) {
         }
     };
     
+    Panel.prototype.setViewsTheme = function() {
+        for (var i = 0, len = this.views.length; i < len; i++) {
+            this.views[i].setTheme(); 
+        }
+    };
+    
     Panel.prototype.refreshViews = function() {
         for (var i = 0, len = this.views.length; i < len; i++) {
             this.views[i].refresh(); 
@@ -169,7 +227,11 @@ define(function (require, exports, module) {
     Panel.prototype.load = function() {
         this.renderViews();
         this.loadViews();
+        loadTheme(this.setViewsTheme)
         this.loadToolbarButtons();
+        prefs.on("change", "theme", function() {
+            loadTheme(this.setViewsTheme);
+        });
         if (this.onLoaded) {
             this.onLoaded(this);
         }

@@ -17,20 +17,21 @@
 }
 
 .compare-panel .cm-s-light-theme {
-    height: 100%;
+    height: 100% !important;
 }
-.compare-panel .cm-s-dark-theme {
-    height: 100%;
+.compare-panel .CodeMirror-wrap {
+    height: 100% !important;
 }
 
-#new-viewer-editor-horizontal .cm-s-light-theme {
-    border-top: 1px dashed #888;
+#new-viewer-editor-horizontal .CodeMirror-wrap {
+    border-top: 1px solid #888;
 }
 
 /* Markers */
 .added {
     background-color: #CEFCEA;
     padding: 2px 1px 2px 1px;
+    opacity: 0.5%;
     width: 100%;
 }
 .added-chars {
@@ -40,11 +41,13 @@
 .added-line {
     border-top: 1px solid #45FDB7;
     padding: 2px 1px 2px 1px;
+    opacity: 0.5;
     width: 100%;
 }
 .removed {
     background-color: #FCCEDB;
     padding: 2px 1px 2px 1px;
+    opacity: 0.5%;
     width: 100%;
 }
 .removed-chars {
@@ -54,6 +57,7 @@
 .removed-line {
     border-top: 1px solid #FFAFC6;
     padding: 2px 1px 2px 1px;
+    opacity: 0.5%;
     width: 100%;
 }
 
