@@ -96,6 +96,7 @@ define(function (require, exports, module) {
                     lineMarker = CompareView.markers.addedLine;
                 }
                 oldView.markLines(o[i].startLine, o[i].endLine, lineMarker);
+                console.log(i);
             }
 
             for (var j = 0; j < n.length; j++) {
@@ -105,6 +106,7 @@ define(function (require, exports, module) {
                     lineMarker = CompareView.markers.removedLine;
                 }
                 newView.markLines( n[j].startLine, n[j].endLine, lineMarker);
+                console.log(i);
             }
         }
 
@@ -139,7 +141,12 @@ define(function (require, exports, module) {
         function _onWorkerMessage(e) {
             var data = e.data;
             if (data.mode == 0) {
-              _markLines(data.old, data.new);
+                _markLines(data.old, data.new);
+                console.log(data.old);
+                console.log(data.new);
+                console.log('old: ' + data.old.length);
+                console.log('new: ' + data.new.length);
+                console.log(data.raw);
             } else {
               //_markChars(data.old, data.new, data.raw);
             }

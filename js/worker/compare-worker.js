@@ -51,26 +51,26 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
                 o.status = diffs[i][0];
                 oDiffs.push(o);
                 // Look ahead see if it is a replace
-                if (diffs[i+1][0] == 0 || diffs[i+1][0] == -1) {
+                /*if (diffs[i+1][0] == 0 || diffs[i+1][0] == -1) {
                     nDiffs.push({
                         startLine: nline + 1,
                         endLine: nline + 1,
                         status: o.status
                     });
-                } 
+                }*/ 
                 oline = o.endLine;
             } else if (diffs[i][0] == 1) {
                 n = lineInfo(diffs[i][1], nline);
                 n.status = diffs[i][0];
                 nDiffs.push(n);
                 // Look behind to see if it was a replace
-                if (diffs[i-1][0] !== -1) {
+                /*if (diffs[i-1][0] !== -1) {
                     oDiffs.push({ 
                         startLine: oline + 1,
                         endLine: oline + 1,
                         status: n.status
                     });
-                } 
+                }*/ 
                 nline = n.endLine;
             } else {
                 // Not adding this to diff lists
@@ -136,7 +136,7 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         stl = ln; 
         endc = stc;
         endl = stl;
-        while(true) {
+        while (true) {
             endIndex = text.indexOf("\n", startIndex);
             if (endIndex == -1) {
                 endc += text.substring(startIndex).length;
@@ -164,16 +164,17 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         var endIndex = 0;
         var startIndex = 0
         var lines = 0;
-        while(true) {
+        while (true) {
             endIndex = text.indexOf("\n", startIndex);
-            if (endIndex == -1) {
+            if (endIndex === -1) {
                 break;
             }
             startIndex = endIndex + 1;
             lines++;
         }
         return {
-            startLine: ln + 1,
+            n: lines,
+            startLine: ln, // hack
             endLine: ln + lines
         }
     }
@@ -188,6 +189,7 @@ importScripts("../plugin/google-diff-match-patch/diff_match_patch_uncompressed.j
         } else {
             d = wordAnalysis(diffs);
         }
+        d.raw =  diffs;
         d.mode = data.mode;
         self.postMessage(d);
     }, false);
