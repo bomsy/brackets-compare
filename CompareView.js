@@ -20,7 +20,7 @@ define(function (require, exports, module) {
     function makeMarker(color, content) {
       var marker = document.createElement("div");
       marker.style.color = color;
-      marker.innerHTML = content;
+      marker.innerHTML = "&nbsp;" + content + "&nbsp;&nbsp;";
       return marker;
     }
 
@@ -53,12 +53,17 @@ define(function (require, exports, module) {
     }
     
     function View(options) {
-        this.id = options.id;
-        this.title = options.title || "";
-        this.text = options.text || "";
-        this.lineNumbers = options.lineNumbers || true;
-        this.lineWrapping = options.lineWrapping || true;
-        this.mode = options.mode || View.MODES.js;
+      this.id = options.id;
+      this.title = options.title || "";
+      this.text = options.text || "";
+      this.lineNumbers = options.lineNumbers || true;
+      this.lineWrapping = options.lineWrapping || true;
+      this.mode = options.mode || View.MODES.js;
+      
+      // markers
+      this.lineMarker = options.lineMarker || null;
+      this.characterMarker = options.charactermarker || null;
+      
         
         // Brackets file object
         this.file = options.file || null;
@@ -93,6 +98,9 @@ define(function (require, exports, module) {
         this.getText = this.getText.bind(this);
         this.render = this.render.bind(this);
         this.markGutter = this.markGutter.bind(this);
+        this.markLine = this.markLine.bind(this);
+        this.markLines = this.markLines.bind(this);
+        this.getLine = this.getLine.bind(this);
         this.removeAllLines = this.removeAllLines.bind(this);
         this.scrollIntoView = this.scrollIntoView.bind(this);
         
@@ -148,7 +156,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.loadEvents = function() {
-        this.cm.on("change", debounce(this.onKeyPressed, 100));
+        this.cm.on("change", debounce(this.onKeyPressed, 200));
         this.cm.on("scroll", this._emitScrollEvent);
         this.cm.on("viewportChange", this.onViewportChange);
         this.cm.on("focus", this.onFocus);
@@ -156,7 +164,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.destroyEvents = function() {
-        this.cm.off("change", debounce(this.onKeyPressed, 100));
+        this.cm.off("change", debounce(this.onKeyPressed, 200));
         this.cm.off("scroll", this._emitScrollEvent);
         this.cm.off("viewportChange", this.onViewportChange);
         this.cm.off("focus", this.onFocus);
@@ -175,6 +183,16 @@ define(function (require, exports, module) {
             this.markedLines[line] = mark;
         }
     };
+  
+  View.prototype.markLines = function(lines) {
+    this.clearGutter();
+    this.removeAllLines();
+    var self = this;
+    lines.forEach(function(line) {
+      self.markGutter(line, self.lineMarker.color, self.lineMarker.value);
+      self.markLine(line, self.lineMarker.className);
+    });
+  };
     
     // Sets up a brackets document
     View.prototype.setDocument = function(file){
@@ -217,24 +235,19 @@ define(function (require, exports, module) {
     View.prototype.clearGutter = function() {
         this.cm.clearGutter("compare-gutter");
     };
-
-    View.prototype.markLines = function(from, to, marker) {
-        var i = from;
-        while(i <= to) {
-            this.markGutter(i + offset, marker.color, marker.value);
-            this.markLine(i + offset, marker.className);
-            i++;
-        }
+  
+    View.prototype.getLine = function(line) {
+      return this.cm.getLine(line);
     };
 
     View.prototype.markText = function(from, to, className) {
-        this.cm.markText({
-            line: from.line + offset,
-            ch: from.ch
-        }, {
-            line: to.line + offset,
-            ch: to.ch
-        }, { className: className });
+      this.cm.markText({ 
+        line: from.line, 
+        ch: from.ch 
+      }, {
+        line: to.line, 
+        ch: to.ch 
+      }, { className: className });
     };
     
     View.prototype.unmarkAllText = function(marker) {

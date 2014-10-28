@@ -4,10 +4,12 @@
 /*global define */
 
 define({
-    "COMPARE_WITH" : "Compare With...",
-    "CHOOSE_FILE" : "Choose a file...",
-    "SAVE_FILES" : "Save file(s)",
-    "CLOSE_VIEWS" : "Exit Diffs",
-    "STICK" : "Stick Views",
-    "UNSTICK": "Unstick Views"
+  'COMPARE_VERTICAL': 'Vertical Compare',
+  'COMPARE_HORIZONTAL': 'Horizontal Compare',
+  'COMPARE_FILE' : 'Compare with file...',
+  'COMPARE_HISTORY' : 'Compare history',
+  'CHOOSE_FILE' : 'Choose a file...',
+  'SAVE_FILES' : 'Save file(s)',
+  'CLOSE_VIEWS' : 'Exit Compare',
+  'TOGGLE_STICKY' : 'Toggle Sticky',
 });

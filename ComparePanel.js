@@ -5,6 +5,8 @@
 define(function (require, exports, module) {  
     "use strict";
     var PanelManager    =   brackets.getModule("view/PanelManager"),
+        WorkspaceManager =  brackets.getModule("view/WorkspaceManager"),
+        CommandManager   =   brackets.getModule("command/CommandManager"),
         ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils"),
         EditorManager   =   brackets.getModule("editor/EditorManager"),
         ResizerPanel    =   brackets.getModule("utils/Resizer"),
@@ -15,7 +17,7 @@ define(function (require, exports, module) {
         FileUtils       =   brackets.getModule("file/FileUtils"),
         PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
         prefs = PreferencesManager.getExtensionPrefs("themes"),
-        Strings         =   require("../strings");
+        Strings         =   require("strings");
     
     var COMPARE_PANEL   =   "compare.panel";
     var statusInfoPanel = document.querySelector("#status-info");
@@ -171,7 +173,8 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.toolbarCloseClick = function() {
-        this.destroy();
+      CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
+      this.destroy();
     };
     
     Panel.prototype.toolbarSaveClick = function() {
@@ -247,7 +250,7 @@ define(function (require, exports, module) {
             content += this.views[i].render(this.layout); 
         }
         content += "</div>"    
-        this.pane = PanelManager.createBottomPanel(COMPARE_PANEL, $(content), 1000);
+        this.pane = WorkspaceManager.createBottomPanel(COMPARE_PANEL, $(content), 1000);
         this.$el = $("#compare-panel");
         this.parent = this.$el.parent();
         this.bindEvents();

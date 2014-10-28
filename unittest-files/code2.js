@@ -73,7 +73,8 @@ define(function (require, exports, module) {
     };
     
     View.prototype.render = function() {
-        return Mustache.render(templateString, { id: this.id, title: this.title, text: this.text });
+        return Mustache.render(templateString, { 
+          id: this.id, title: this.title, text: this.text });
     };
     
     exports.CompareView = Viewer;

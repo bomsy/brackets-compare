@@ -22,38 +22,41 @@ define(function (require, exports, module) {
         FileUtils        =   brackets.getModule("file/FileUtils"),
         NodeDomain       =   brackets.getModule("utils/NodeDomain"),
         Strings          =   require("strings"),
+        
+        _                = brackets.getModule("thirdparty/lodash"),
 
-        CMD_COMPARE         =   "command.compare",
-        CMD_LAYOUT          =   "command.layout",
-        CMD_HIDEVIEW        =   "command.hideview",
-        CMD_STICKYVIEWS     =   "command.strickyViews";
+        CMD_COMPARE_FILE = "command.comparefile",
+        CMD_COMPARE_HISTORY = "command.comparehistory",
+        CMD_LAYOUT_VERTICAL = "command.vlayout",
+        CMD_LAYOUT_HORIZONTAL = "command.hlayout",
+        CMD_HIDEVIEW = "command.hideview",
+        CMD_TOGGLE_STICKY = "command.togglesticky";
 
-    var ComparePanel = require("js/ComparePanel").ComparePanel,
-        CompareView = require("js/CompareView").CompareView;
+    var ComparePanel = require("ComparePanel").ComparePanel,
+        CompareView = require("CompareView").CompareView;
 
     // False shows in horizontal view
-    var gblShowInVerticalView  = true,
+    var isVertical = true,
 
     // Global for handling sticky scrolling of the diff views
         gblStickyViews         = false;
 
     AppInit.appReady(function() {
-        ExtensionUtils.loadStyleSheet(module, "css/main.css");
+        ExtensionUtils.loadStyleSheet(module, "styles/brackets-compare.css");
 
         var oldView = null ,
             newView = null,
             panel = null;
 
-        var workerPath = ExtensionUtils.getModulePath(module, "js/worker/compare-worker.js");
+        var workerPath = ExtensionUtils.getModulePath(module, "compare-worker.js");
         // Seperate workers for handling line and character diffs
         // Are there perf improvements ???
-        var lineWorker = new Worker(workerPath);
-        var charWorker = new Worker(workerPath);
-
+        var worker = new Worker(workerPath);
+        
         // Load menus
         var viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
         var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
-        var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU, true);
+        var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_CONTEXT_MENU, true);
 
         // Wrapper around FileSystem.showOpenDialog
         // which returns a promise instead.
@@ -83,84 +86,20 @@ define(function (require, exports, module) {
           };
         }
 
-        function _markLines(o, n) {
-            oldView.clearGutter();
-            newView.clearGutter();
-            oldView.removeAllLines();
-            newView.removeAllLines();
-            var lineMarker = null;
-            for (var i = 0; i < o.length; i++) {
-                if (o[i].status === -1) {
-                    lineMarker = CompareView.markers.removed;
-                } else {
-                    lineMarker = CompareView.markers.addedLine;
-                }
-                oldView.markLines(o[i].startLine, o[i].endLine, lineMarker);
-                console.log(i);
-            }
-
-            for (var j = 0; j < n.length; j++) {
-                if (n[j].status === 1) {
-                    lineMarker = CompareView.markers.added;
-                } else {
-                    lineMarker = CompareView.markers.removedLine;
-                }
-                newView.markLines( n[j].startLine, n[j].endLine, lineMarker);
-                console.log(i);
-            }
+        function _markLines(data) {
+          oldView.markLines(data.removed);
+          newView.markLines(data.added);
         }
 
-        function _markChars(o, n, r) {
-            oldView.unmarkAllText(CompareView.markers.removedChars);
-            for (var i = 0; i < o.length; i++) {
-                if (o[i].status == -1) {
-                    oldView.markText({
-                        line: o[i].startLine,
-                        ch: o[i].startChar
-                    }, {
-                        line: o[i].endLine,
-                        ch: o[i].endChar
-                    }, CompareView.markers.removedChars);
-                }
-            }
-
-            newView.unmarkAllText(CompareView.markers.addedChars);
-            for (var j = 0; j < n.length; j++) {
-                if (n[j].status == 1) {
-                    newView.markText({
-                        line: n[j].startLine,
-                        ch: n[j].startChar
-                    }, {
-                        line: n[j].endLine,
-                        ch: n[j].endChar
-                    }, CompareView.markers.addedChars);
-                }
-            }
-        }
 
         function _onWorkerMessage(e) {
-            var data = e.data;
-            if (data.mode == 0) {
-                _markLines(data.old, data.new);
-                console.log(data.old);
-                console.log(data.new);
-                console.log('old: ' + data.old.length);
-                console.log('new: ' + data.new.length);
-                console.log(data.raw);
-            } else {
-              //_markChars(data.old, data.new, data.raw);
-            }
+          _markLines(e.data);
         }
 
-        function _onLayoutChange() {
-            gblShowInVerticalView = !gblShowInVerticalView;
-            CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
-        }
 
         function _onCurrentDocumentChange() {
             panel.destroy();
-            lineWorker.removeEventListener("message", _onWorkerMessage, false);
-            //charWorker.removeEventListener("message", _onWorkerMessage, false);
+            worker.removeEventListener("message", _onWorkerMessage, false);
         }
 
         function _onViewKeyPressed(editor, e) {
@@ -168,16 +107,11 @@ define(function (require, exports, module) {
         }
 
         function _runWorkers() {
-            lineWorker.postMessage({
-                mode: 0,
-                o: oldView.getText(),
-                n: newView.getText()
-            });
-            /*charWorker.postMessage({
-                mode: 1,
-                o: oldView.getText(),
-                n: newView.getText()
-            });*/
+          worker.postMessage({
+            mode: 0,
+            o: oldView.getText(),
+            n: newView.getText()
+          });
         }
 
         function _onStickViews() {
@@ -191,41 +125,39 @@ define(function (require, exports, module) {
 
         // Creates the panels, views and runs the workers
         function _onShowCompareViews() {
-            panel = new ComparePanel({
-                layout: gblShowInVerticalView ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal,
-                onDestroyed: function() {
-                    console.log("destroyed")
-                    lineWorker.removeEventListener("message", _onWorkerMessage, false);
-                    //charWorker.removeEventListener("message", _onWorkerMessage, false);
-                }
-            });
+          panel = new ComparePanel({
+            layout: isVertical ? ComparePanel.layouts.vertical : ComparePanel.layouts.horizontal,
+            onDestroyed: function() {
+              worker.removeEventListener("message", _onWorkerMessage, false);
+            }
+          });
 
             CommandManager.get(CMD_HIDEVIEW).setEnabled(true);
 
             // Setup listener for worker
-            lineWorker.addEventListener("message", _onWorkerMessage, false);
-            charWorker.addEventListener("message", _onWorkerMessage, false);
+            worker.addEventListener("message", _onWorkerMessage, false);
 
             var _currentDoc = DocumentManager.getCurrentDocument();
             var extFile = null;
 
             oldView = new CompareView({
-                id: "old-viewer",
-                title: _currentDoc.file.name,
-                text: _currentDoc.getText(),
-                file: _currentDoc.file,
-                mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
-                onKeyPressed: _onViewKeyPressed,
-                onFocus: function() {
-                    //set as focused view
-                    panel.currentView = oldView;
-                },
-                onBlur: function() {
-                    panel.currentView = null;
-                },
-                onFileSave: function() {
-                    console.log(this.id + " file saved.");
-                }
+              id: "old-viewer",
+              title: _currentDoc.file.name,
+              text: _currentDoc.getText(),
+              file: _currentDoc.file,
+              mode: CompareView.MODES[FileUtils.getFileExtension(_currentDoc.file.fullPath)],
+              onKeyPressed: _onViewKeyPressed,
+              lineMarker: CompareView.markers.removed,
+              onFocus: function() {
+                //set as focused view
+                panel.currentView = oldView;
+              },
+              onBlur: function() {
+                panel.currentView = null;
+              },
+              onFileSave: function() {
+                console.log(this.id + " file saved.");
+              }
             });
 
             oldView.onScroll = _setTrigger(function() {
@@ -257,21 +189,22 @@ define(function (require, exports, module) {
             .then(FileUtils.readAsText)
             .then(function(text) {
                 newView = new CompareView({
-                    id: "new-viewer",
-                    title: extFile.name,
-                    text: text,
-                    file: FileSystem.getFileForPath(extFile.fullPath),
-                    mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
-                    onKeyPressed: _onViewKeyPressed,
-                    onFocus: function() {
-                        panel.currentView = newView;
-                    },
-                    onBlur: function() {
-                        panel.currentView = null;
-                    },
-                    onFileSave: function() {
-                        console.log(this.id + " file saved.");
-                    }
+                  id: "new-viewer",
+                  title: extFile.name,
+                  text: text,
+                  file: FileSystem.getFileForPath(extFile.fullPath),
+                  mode: CompareView.MODES[FileUtils.getFileExtension(extFile.fullPath)],
+                  onKeyPressed: _onViewKeyPressed,
+                  lineMarker: CompareView.markers.added,
+                  onFocus: function() {
+                    panel.currentView = newView;
+                  },
+                  onBlur: function() {
+                    panel.currentView = null;
+                  },
+                  onFileSave: function() {
+                    console.log(this.id + " file saved.");
+                  }
                 });
 
                 newView.onScroll = _setTrigger(function() {
@@ -294,11 +227,29 @@ define(function (require, exports, module) {
                 _runWorkers();
             });
         }
+      
+        function _onHorizontalLayoutChange() {
+          isVertical = false;
+          changeLayout();
+        }
+      
+      function _onVerticalLayoutChange() {
+        isVertical = true;
+        changeLayout();
+      }
+      
+      function changeLayout() {
+        CommandManager.get(CMD_LAYOUT_VERTICAL).setChecked(isVertical);
+        CommandManager.get(CMD_LAYOUT_HORIZONTAL).setChecked(!isVertical);
+      }
+
 
         // Command register
-        CommandManager.register(Strings.COMPARE_WITH, CMD_COMPARE, _onShowCompareViews);
-        CommandManager.register("Show Compare Vertically", CMD_LAYOUT, _onLayoutChange);
-        CommandManager.register("Turn off Sticky Views", CMD_STICKYVIEWS, _onStickViews);
+        CommandManager.register(Strings.COMPARE_FILE, CMD_COMPARE_FILE, _onShowCompareViews);
+        CommandManager.register(Strings.COMPARE_HISTORY, CMD_COMPARE_HISTORY, _onShowCompareViews);
+        CommandManager.register(Strings.COMPARE_VERTICAL, CMD_LAYOUT_VERTICAL, _onVerticalLayoutChange);
+        CommandManager.register(Strings.COMPARE_HORIZONTAL, CMD_LAYOUT_HORIZONTAL, _onHorizontalLayoutChange);
+        CommandManager.register(Strings.TOGGLE_STICKY, CMD_TOGGLE_STICKY, _onStickViews);
         CommandManager.register(Strings.CLOSE_VIEWS, CMD_HIDEVIEW, _onMenuCloseViews);
 
         // Events
@@ -306,17 +257,21 @@ define(function (require, exports, module) {
 
         //Add to the view menus
         viewMenu.addMenuDivider();
-        viewMenu.addMenuItem(CMD_LAYOUT);
-        viewMenu.addMenuItem(CMD_STICKYVIEWS);
+      
+        viewMenu.addMenuItem(CMD_LAYOUT_VERTICAL);
+        viewMenu.addMenuItem(CMD_LAYOUT_HORIZONTAL);
+        viewMenu.addMenuItem(CMD_TOGGLE_STICKY);
         viewMenu.addMenuItem(CMD_HIDEVIEW);
 
-        CommandManager.get(CMD_LAYOUT).setChecked(gblShowInVerticalView);
+        changeLayout();
+      
         CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
 
         projectMenu.addMenuDivider();
-        projectMenu.addMenuItem(CMD_COMPARE);
+        projectMenu.addMenuItem(CMD_COMPARE_FILE);
+        projectMenu.addMenuItem(CMD_COMPARE_HISTORY);
 
         workingSetMenu.addMenuDivider();
-        workingSetMenu.addMenuItem(CMD_COMPARE);
+        workingSetMenu.addMenuItem(CMD_COMPARE_HISTORY);
     });
 });
