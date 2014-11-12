@@ -28,7 +28,7 @@ Compare two files in brackets with detailed information about differences.
 2. Click **"Compare with file ..."**
 3. Select the second file to diff from the select dialog 
 
-#### Compare changes history for one file
+#### Compare changes history for one file (not working, under development!)
 
 1. Click file to make sure its selected.
 2. Right-click on the file
