@@ -3,12 +3,12 @@ brackets-compare
 
 Compare two files in brackets with detailed information about differences.
 
-##UNDER DEVELOPMENT
+## UNDER DEVELOPMENT
 
 * Still under development
 * Need feedbacks
 
-###Todo
+### Todo
 
 * Setup tests
 * ~~Add markers (lines) to show location of previous content~~
@@ -19,20 +19,17 @@ Compare two files in brackets with detailed information about differences.
 * Cleanup code
 * ~~Auto-scrolling views - Look at Code mirror viewportChange event~~
 
-###Usage
+### Usage
 
-1. Right-click on the first file to diff
-2. Click **"Compare with..."**
+#### Compare two files
+
+1. Click on the first file to make sure its selected 
+2. Right-click on the selected file
+2. Click **"Compare with file ..."**
 3. Select the second file to diff from the select dialog 
-4. Toolbar icons in blue for various actions
 
-### Screenshots
+#### Compare changes history for one file
 
-#### Basic Horizontal Views
-![sample screenshot 1](sample.png "Brackets compare usage")
-
-#### Basic Vertical Views
-
-
-#### View showing dialog
-![sample screenshot 2](sample2.png "Brackets compare usage showing select dialog")
+1. Click file to make sure its selected.
+2. Right-click on the file
+3. Click **"Compare save history"**
