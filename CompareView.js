@@ -3,8 +3,8 @@
 
 /** Simple extension that adds a "File > Hello World" menu item. Inserts "Hello, world!" at cursor pos. */
 define(function (require, exports, module) {
-    "use strict";
-    var FileUtils = brackets.getModule("file/FileUtils"),
+  "use strict";
+  var FileUtils = brackets.getModule("file/FileUtils"),
         DocumentManager = brackets.getModule("document/DocumentManager"),
         ThemeView       =   brackets.getModule("view/ThemeView"),
         ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils");
@@ -17,10 +17,11 @@ define(function (require, exports, module) {
 
     var offset = -1;
 
-    function makeMarker(color, content) {
+    function makeMarker(color, content, bgColor) {
       var marker = document.createElement("div");
       marker.style.color = color;
-      marker.innerHTML = "&nbsp;" + content + "&nbsp;&nbsp;";
+      //marker.style.backgroundColor = bgColor;
+      marker.innerHTML = content;
       return marker;
     }
 
@@ -117,9 +118,10 @@ define(function (require, exports, module) {
 
     View.markers = {
         added: {
-            className: "added",
-            color: "#00784A",
-            value: "+"
+          className: "added",
+          color: "#00784A",
+          value: "+",
+          bgColor: "#CEFCEA"
         },
         addedLine: {
             className: "added-line",
@@ -128,9 +130,10 @@ define(function (require, exports, module) {
         },
         addedChars: "added-chars",
         removed: {
-            className: "removed",
-            color: "#f00", //"#8E0028",
-            value: "-"
+          className: "removed",
+          color: "#f00", //"#8E0028",
+          value: "-",
+          bgColor: "#FCCEDB"
         },
         removedLine: {
             className: "removed-line",
@@ -189,7 +192,7 @@ define(function (require, exports, module) {
     this.removeAllLines();
     var self = this;
     lines.forEach(function(line) {
-      self.markGutter(line, self.lineMarker.color, self.lineMarker.value);
+      self.markGutter(line, self.lineMarker.color, self.lineMarker.value, self.lineMarker.bgColor);
       self.markLine(line, self.lineMarker.className);
     });
   };
@@ -227,9 +230,9 @@ define(function (require, exports, module) {
         delete this.markedLines[mark.lineNo()];
     };
 
-    View.prototype.markGutter = function(line, color, value) {
+    View.prototype.markGutter = function(line, color, value, bgColor) {
         var info = this.cm.lineInfo(line);
-        this.cm.setGutterMarker(line, "compare-gutter", info.gutterMarkers ? null : makeMarker(color, value));
+        this.cm.setGutterMarker(line, "compare-gutter", info.gutterMarkers ? null : makeMarker(color, value, bgColor));
     };
 
     View.prototype.clearGutter = function() {
@@ -261,7 +264,8 @@ define(function (require, exports, module) {
     };
     
     View.prototype.setTheme = function() {
-        ThemeView.updateThemes(this.cm);
+      ThemeView.updateThemes(this.cm);
+      console.log($(''));
     };
 
     View.prototype.setText = function(text) {

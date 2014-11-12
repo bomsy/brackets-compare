@@ -15,6 +15,9 @@
     height: 100%;
     float: left;
 }
+.compare-gutter {
+  min-width: 15px;
+}
 
 .compare-panel .cm-s-light-theme {
     height: 100% !important;

@@ -86,16 +86,15 @@ define(function (require, exports, module) {
      }
     
     function loadCurrentTheme() {
-        var theme = ThemeManager.getCurrentTheme();
-        console.log(theme.file._path);
-        var pending = theme && FileUtils.readAsText(theme.file)
+      var theme = ThemeManager.getCurrentTheme();
+      var pending = theme && FileUtils.readAsText(theme.file)
         .then(function (lessContent) {
-            return lessifyTheme(lessContent.replace(commentRegex, ""), theme);
+          return lessifyTheme(lessContent.replace(commentRegex, ""), theme);
         })
         .then(function (style) {
-            // remove previous stylesheet
-            $("head > style").last().remove();    
-            return ExtensionUtils.addEmbeddedStyleSheet(style);
+          // remove previous stylesheet
+          $("head > style").last().remove();    
+          return ExtensionUtils.addEmbeddedStyleSheet(style);
         });
         return $.when(pending);
     }
@@ -173,7 +172,7 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.toolbarCloseClick = function() {
-      CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
+      //CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
       this.destroy();
     };
     
@@ -190,8 +189,8 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.loadToolbarButtons = function() {
-        _addToolbarButton("compare-save", Strings.SAVE_FILES, "floppy-disk", this.toolbarSaveClick);
-        _addToolbarButton("compare-hide", Strings.CLOSE_VIEWS, "off", this.toolbarCloseClick);
+        _addToolbarButton("compare-save", Strings.SAVE_FILES, "save", this.toolbarSaveClick);
+        _addToolbarButton("compare-hide", Strings.CLOSE_VIEWS, "remove-sign", this.toolbarCloseClick);
         //_addToolbarButton("compare-sticky", "Turn off sticky views", "flash", function(){});
     };
     
@@ -228,16 +227,20 @@ define(function (require, exports, module) {
     };    
     
     Panel.prototype.load = function() {
-        this.renderViews();
-        this.loadViews();
-        loadTheme(this.setViewsTheme)
-        this.loadToolbarButtons();
-        prefs.on("change", "theme", function() {
-            loadTheme(this.setViewsTheme);
-        });
-        if (this.onLoaded) {
-            this.onLoaded(this);
-        }
+      this.renderViews();
+      this.loadViews();
+      
+      this.loadToolbarButtons();
+      
+      loadTheme(this.setViewsTheme);
+      // Listen for brackets theme change
+      prefs.on("change", "theme", function() {
+        loadTheme(this.setViewsTheme);
+      });
+      
+      if (this.onLoaded) {
+        this.onLoaded(this);
+      }
     };
     
     Panel.prototype.addView = function(editorView) {
