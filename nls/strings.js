@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
-    
+
     'use strict';
-    
+
     // Code that needs to display user strings should call require("strings") to load
     // strings.js. This file will dynamically load strings.js for the specified by bracketes.locale.
     //
@@ -11,6 +11,7 @@ define(function (require, exports, module) {
     // TODO: dynamically populate the local prefix list below?
     module.exports = {
         root: true,
-        "fr": true
+        "fr": true,
+        "pt-PT": true
     };
 });
