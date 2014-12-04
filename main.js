@@ -33,7 +33,8 @@ define(function (require, exports, module) {
     CMD_TOGGLE_STICKY = "command.togglesticky";
 
   var ComparePanel = require("ComparePanel").ComparePanel,
-      CompareView = require("CompareView").CompareView;
+      CompareView = require("CompareView").CompareView,
+      Utils = require("Utils").utils;
 
   // False shows in horizontal view
   var isVertical = true,
@@ -49,8 +50,6 @@ define(function (require, exports, module) {
       panel = null;
 
     var workerPath = ExtensionUtils.getModulePath(module, "compare-worker.js");
-    // Seperate workers for handling line and character diffs
-    // Are there perf improvements ???
     var worker = new Worker(workerPath);
 
     // Load menus
@@ -58,33 +57,6 @@ define(function (require, exports, module) {
     var projectMenu = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU, true);
     var workingSetMenu = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_CONTEXT_MENU, true);
 
-    // Wrapper around FileSystem.showOpenDialog
-    // which returns a promise instead.
-    function _showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes) {
-          var result = new $.Deferred();
-          FileSystem.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes,
-              function(err, data) {
-                  if (!err) {
-                      result.resolve(data[0]);
-                  } else {
-                      result.reject(err);
-                  }
-              });
-          return result.promise();
-      }
-
-      // Fires the trigger when fn does not fire
-      // within the threshold period
-      // (Used to notify when scrolling on the views have stopped,
-      // preventing Circular referencing when sticking views)
-      function _setTrigger(fn, threshold, trigger) {
-        var timer = null;
-        return function() {
-          clearTimeout(timer);
-          fn.apply(this, arguments);
-          timer = setTimeout(trigger, threshold);
-        };
-      }
 
       function _markLines(data) {
         oldView.markLines(data.removed);
@@ -98,12 +70,12 @@ define(function (require, exports, module) {
 
 
       function _onCurrentDocumentChange() {
-          panel.destroy();
-          worker.removeEventListener("message", _onWorkerMessage, false);
+        panel.destroy();
+        worker.removeEventListener("message", _onWorkerMessage, false);
       }
 
       function _onViewKeyPressed(editor, e) {
-          _runWorkers();
+        _runWorkers();
       }
 
       function _runWorkers() {
@@ -160,7 +132,7 @@ define(function (require, exports, module) {
             }
           });
 
-          oldView.onScroll = _setTrigger(function() {
+          oldView.onScroll = Utils.trigger(function() {
               var o = this.getScrollInfo();
               newView.emitScrollEvents = false;
               newView.scrollIntoView({
@@ -175,7 +147,7 @@ define(function (require, exports, module) {
 
           panel.addView(oldView);
 
-          _showOpenDialog( false, false, Strings.CHOOSE_FILE, "", "")
+          Utils.showOpenDialog( false, false, Strings.CHOOSE_FILE, "", "")
           .then(function(path) {
               var r = new $.Deferred();
               extFile = FileSystem.getFileForPath(path);
@@ -207,7 +179,7 @@ define(function (require, exports, module) {
                 }
               });
 
-              newView.onScroll = _setTrigger(function() {
+              newView.onScroll = Utils.trigger(function() {
                   var o = this.getScrollInfo();
                   oldView.emitScrollEvents = false;
                   oldView.scrollIntoView({

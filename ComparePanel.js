@@ -11,33 +11,19 @@ define(function (require, exports, module) {
         EditorManager   =   brackets.getModule("editor/EditorManager"),
         ResizerPanel    =   brackets.getModule("utils/Resizer"),
         Sidebar         =   brackets.getModule("project/SidebarView"),
-        statusBar       =   brackets.getModule("widgets/StatusBar"),
+        StatusBar       =   brackets.getModule("widgets/StatusBar"),
         ThemeView       =   brackets.getModule("view/ThemeView"),
         ThemeManager    =   brackets.getModule("view/ThemeManager"),
         FileUtils       =   brackets.getModule("file/FileUtils"),
         PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-        prefs = PreferencesManager.getExtensionPrefs("themes"),
-        Strings         =   require("strings");
+        prefs = PreferencesManager.getExtensionPrefs("themes");
+  
+    var Strings = require("strings"); 
+    var Utils = require("Utils").utils;
     
     var COMPARE_PANEL   =   "compare.panel";
     var statusInfoPanel = document.querySelector("#status-info");
     var cacheStatusInfo = statusInfoPanel.innerText;
-    
-    var commentRegex = /\/\*([\s\S]*?)\*\//mg;
-    var stylesPath = FileUtils.getNativeBracketsDirectoryPath() + "/styles/";
-        
-    // Calculates size of the element to fill it containing container
-    function _calcElHeight(el) {
-        var $avlHeight = $(".content").height();
-        
-        el.siblings().each(function(index, el) {
-            var $el = $(el);
-           if($el.css("display") !== "none" && $el.css("position") !== "absolute") {
-                $avlHeight -= $el.outerHeight();
-           }       
-        });
-        return Math.max($avlHeight, 0);
-    }
     
     function _addToolbarButton(id, tooltip, icon, handler) {
         var html = "<a href='#' id='" + id + "' title='" + 
@@ -52,7 +38,7 @@ define(function (require, exports, module) {
     }
 
     function _setHeight($el) {
-        $el.height(_calcElHeight($el));
+        $el.height(Utils.calculateElHeight($el));
     }
     
     function _showCurrentEditor() {
@@ -63,46 +49,11 @@ define(function (require, exports, module) {
        $("#editor-holder").hide(); 
     } 
     
-    function fixPath(path) {
-        return path.replace(/^([A-Z]+:)?\//, function (match) {
-            return match.toLocaleLowerCase();
-        }); 
-    }
     
-    function lessifyTheme(content, theme) {
-        var deferred = new $.Deferred();
-        var parser = new less.Parser({
-            rootpath: fixPath(stylesPath),
-            filename: fixPath(theme.file._path)
-        });
-        parser.parse("#compare-panel {" + content + "\n}", function (err, tree) {
-            if (err) {
-                deferred.reject(err);
-            } else {
-                deferred.resolve(tree.toCSS());
-            }
-        });
-        return deferred.promise();
-     }
-    
-    function loadCurrentTheme() {
-      var theme = ThemeManager.getCurrentTheme();
-      var pending = theme && FileUtils.readAsText(theme.file)
-        .then(function (lessContent) {
-          return lessifyTheme(lessContent.replace(commentRegex, ""), theme);
-        })
-        .then(function (style) {
-          // remove previous stylesheet
-          $("head > style").last().remove();    
-          return ExtensionUtils.addEmbeddedStyleSheet(style);
-        });
-        return $.when(pending);
-    }
-    
-    function loadTheme(callback) {
-        $.when(loadCurrentTheme())
-            .done(callback);
-    }
+  function loadTheme(callback) {
+    $.when(Utils.loadCurrentTheme())
+      .done(callback)
+  }
     
     function Panel(options) {
         // The current focused view
@@ -131,6 +82,7 @@ define(function (require, exports, module) {
         this.onResize = this.onResize.bind(this);
         this.bindEvents = this.bindEvents.bind(this);
         this.setViewsTheme = this.setViewsTheme.bind(this);
+        this.load = this.load.bind(this);
         
         this.toolbarCloseClick = this.toolbarCloseClick.bind(this);
         this.toolbarSaveClick = this.toolbarSaveClick.bind(this);
@@ -164,11 +116,19 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.showBusy = function() {
-        statusBar.showBusyIndicator(true);
+        StatusBar.showBusyIndicator(true);
+    };
+  
+    Panel.prototype.hideStatusbar = function() {
+      StatusBar.hide();
+    };
+    
+    Panel.prototype.showStatusbar = function() {
+      StatusBar.show();
     };
     
     Panel.prototype.hideBusy = function() {
-        statusBar.hideBusyIndicator();
+        StatusBar.hideBusyIndicator();
     };
     
     Panel.prototype.toolbarCloseClick = function() {
@@ -189,8 +149,8 @@ define(function (require, exports, module) {
     };
     
     Panel.prototype.loadToolbarButtons = function() {
-        _addToolbarButton("compare-save", Strings.SAVE_FILES, "save", this.toolbarSaveClick);
-        _addToolbarButton("compare-hide", Strings.CLOSE_VIEWS, "remove-sign", this.toolbarCloseClick);
+        _addToolbarButton("compare-save", Strings.SAVE_FILES, "hdd", this.toolbarSaveClick);
+        _addToolbarButton("compare-hide", Strings.CLOSE_VIEWS, "remove", this.toolbarCloseClick);
         //_addToolbarButton("compare-sticky", "Turn off sticky views", "flash", function(){});
     };
     
@@ -227,15 +187,15 @@ define(function (require, exports, module) {
     };    
     
     Panel.prototype.load = function() {
+      var self = this;
       this.renderViews();
       this.loadViews();
       
-      this.loadToolbarButtons();
-      
+      this.loadToolbarButtons();    
       loadTheme(this.setViewsTheme);
       // Listen for brackets theme change
       prefs.on("change", "theme", function() {
-        loadTheme(this.setViewsTheme);
+        loadTheme(self.setViewsTheme);
       });
       
       if (this.onLoaded) {
@@ -268,6 +228,7 @@ define(function (require, exports, module) {
     Panel.prototype.show = function() {
         if (this.pane) {
             this.hideSidebar();
+            this.hideStatusbar();
             _hideCurrentEditor(); 
             _setHeight(this.$el);
             this.pane.show();
@@ -282,8 +243,6 @@ define(function (require, exports, module) {
         for (var i = 0, len = this.views.length; i < len; i++) {
             this.views[i].destroy(); 
         }
-        console.log(cacheStatusInfo);
-        statusInfoPanel.innerText = cacheStatusInfo;
         if (this.onDestroyed) {
             this.onDestroyed();
         }
@@ -297,6 +256,7 @@ define(function (require, exports, module) {
     Panel.prototype.hide = function() {
         if (this.pane) {
             this.showSidebar();
+            this.showStatusbar();
             _showCurrentEditor();
             this.pane.hide();
         }

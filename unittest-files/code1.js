@@ -40,8 +40,8 @@ define(function (require, exports, module) {
     
     View.prototype.load = function() {
        this.cm = CodeMirror.fromTextArea(document.querySelector("#" + this.id + "-area"), {
-            mode: this.mode,
-            lineNumbers: this.lineNumbers
+            mode: this.mode//,
+            //lineNumbers: this.lineNumbers
         });
     };
     

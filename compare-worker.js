@@ -118,7 +118,7 @@ importScripts("thirdparty/google-diff-match-patch/diff_match_patch_uncompressed.
         lines.push(ln); 
         break;
       } else if (end === 0) {
-        if (str.charAt(1) === '\n') {
+        if (text.charAt(1) === '\n') {
           lines.push(ln);
         } else {
           ln++; 

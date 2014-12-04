@@ -5,9 +5,11 @@
 define(function (require, exports, module) {
   "use strict";
   var FileUtils = brackets.getModule("file/FileUtils"),
-        DocumentManager = brackets.getModule("document/DocumentManager"),
-        ThemeView       =   brackets.getModule("view/ThemeView"),
-        ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils");
+      DocumentManager = brackets.getModule("document/DocumentManager"),
+      ThemeView       =   brackets.getModule("view/ThemeView"),
+      ExtensionUtils  =   brackets.getModule("utils/ExtensionUtils");
+  
+  var Utils = require("Utils").utils;
     
     var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
     var templateString = "<div id='{{ id }}-editor-{{ layout}}' class='compare-editor-{{ layout }}'>" +
@@ -16,42 +18,6 @@ define(function (require, exports, module) {
                          "</div>";
 
     var offset = -1;
-
-    function makeMarker(color, content, bgColor) {
-      var marker = document.createElement("div");
-      marker.style.color = color;
-      //marker.style.backgroundColor = bgColor;
-      marker.innerHTML = content;
-      return marker;
-    }
-
-    function debounce(fn, delay) {
-      var timer = null;
-      return function () {
-        var context = this, args = arguments;
-        clearTimeout(timer);
-        timer = setTimeout(function () {
-          fn.apply(context, args);
-        }, delay);
-      };
-    }
-    
-    function scale(value, frm, to) {
-        return value * (to / frm);
-    }
-    
-    function scaleObjectValues(o, frm, to) {
-        for(var prop in o) {
-            o[prop] = scale(o[prop], frm, to);
-        }
-        return o;
-    }
-    
-    function saveFileToDisk(file, text, force) {
-        // We don't want normalized line endings, so it's important to pass true to getText()
-        // returns a promise
-        return FileUtils.writeText(file, text, force);
-    }
     
     function View(options) {
       this.id = options.id;
@@ -68,7 +34,6 @@ define(function (require, exports, module) {
         
         // Brackets file object
         this.file = options.file || null;
-        console.log(this.file);
         this.doc = null;
         // Codemirror  object
         this.cm = null;
@@ -106,7 +71,12 @@ define(function (require, exports, module) {
         this.scrollIntoView = this.scrollIntoView.bind(this);
         
         this._emitScrollEvent = this._emitScrollEvent.bind(this);
-        
+      
+        // Cache the lines highlighted lines
+        this._lines = null;
+        // Theme 
+        this._theme = '';
+      
         this.initialize();
     }
 
@@ -121,26 +91,28 @@ define(function (require, exports, module) {
           className: "added",
           color: "#00784A",
           value: "+",
-          bgColor: "#CEFCEA"
+          bg_light: "#CEFCEA",
+          bg_dark: "#2D3E2A"
         },
-        addedLine: {
+        /*addedLine: {
             className: "added-line",
             color: "#00784A",
             value: ""
         },
-        addedChars: "added-chars",
+        addedChars: "added-chars",*/
         removed: {
           className: "removed",
           color: "#f00", //"#8E0028",
           value: "-",
-          bgColor: "#FCCEDB"
-        },
+          bg_light: "#FCCEDB",
+          bg_dark:"#3A1E19"
+        }/*,
         removedLine: {
             className: "removed-line",
             color: "#8E0028",
             value: ""
         },
-        removedChars: "removed-chars"
+        removedChars: "removed-chars"*/
     };
 
     View.prototype.initialize = function() {
@@ -159,7 +131,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.loadEvents = function() {
-        this.cm.on("change", debounce(this.onKeyPressed, 200));
+        this.cm.on("change", Utils.debounce(this.onKeyPressed, 200));
         this.cm.on("scroll", this._emitScrollEvent);
         this.cm.on("viewportChange", this.onViewportChange);
         this.cm.on("focus", this.onFocus);
@@ -167,7 +139,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.destroyEvents = function() {
-        this.cm.off("change", debounce(this.onKeyPressed, 200));
+        this.cm.off("change", Utils.debounce(this.onKeyPressed, 200));
         this.cm.off("scroll", this._emitScrollEvent);
         this.cm.off("viewportChange", this.onViewportChange);
         this.cm.off("focus", this.onFocus);
@@ -181,7 +153,7 @@ define(function (require, exports, module) {
     };
 
     View.prototype.markLine = function(line, className) {
-        var mark = this.cm.addLineClass(line, "background", className);
+        var mark = this.cm.addLineClass(line, 'background', className);
         if (!this.markedLines[line]) {
             this.markedLines[line] = mark;
         }
@@ -191,9 +163,13 @@ define(function (require, exports, module) {
     this.clearGutter();
     this.removeAllLines();
     var self = this;
+    var lineClassName = self.lineMarker.className + '-' + this._theme;
+    var bgColor = self.lineMarker['bg_' + this._theme];
+    this._lines = lines;
+    
     lines.forEach(function(line) {
-      self.markGutter(line, self.lineMarker.color, self.lineMarker.value, self.lineMarker.bgColor);
-      self.markLine(line, self.lineMarker.className);
+      self.markGutter(line, self.lineMarker.color, self.lineMarker.value, bgColor);
+      self.markLine(line, lineClassName);
     });
   };
     
@@ -232,7 +208,7 @@ define(function (require, exports, module) {
 
     View.prototype.markGutter = function(line, color, value, bgColor) {
         var info = this.cm.lineInfo(line);
-        this.cm.setGutterMarker(line, "compare-gutter", info.gutterMarkers ? null : makeMarker(color, value, bgColor));
+        this.cm.setGutterMarker(line, "compare-gutter", info.gutterMarkers ? null : Utils.createMarker(color, value, bgColor));
     };
 
     View.prototype.clearGutter = function() {
@@ -265,7 +241,16 @@ define(function (require, exports, module) {
     
     View.prototype.setTheme = function() {
       ThemeView.updateThemes(this.cm);
-      console.log($(''));
+      this._theme = this.getThemeType() > 125 ? 'light' : 'dark';
+      if (this._lines) {
+        this.markLines(this._lines);
+      }
+    };
+  
+    // Returns if the the theme is a dark/light theme
+    View.prototype.getThemeType = function() {
+      var rgb = $('.CodeMirror-scroll').first().css('background-color');
+      return Utils.colorBrightness(Utils.parseColor(rgb));
     };
 
     View.prototype.setText = function(text) {
@@ -279,11 +264,11 @@ define(function (require, exports, module) {
     };
     
     View.prototype.saveFile = function() {
-        saveFileToDisk(this.file, this.getText(), true)
-            .done(this.onFileSave)
-            .fail(function (err) {
-                console.log(err);
-            });
+      Utils.saveFileToDisk(this.file, this.getText(), true)
+        .done(this.onFileSave)
+        .fail(function (err) {
+          console.log(err);
+        });
     };
 
     View.prototype.destroy = function() {
