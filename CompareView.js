@@ -94,30 +94,17 @@ define(function (require, exports, module) {
           bg_light: "#CEFCEA",
           bg_dark: "#2D3E2A"
         },
-        /*addedLine: {
-            className: "added-line",
-            color: "#00784A",
-            value: ""
-        },
-        addedChars: "added-chars",*/
         removed: {
           className: "removed",
           color: "#f00", //"#8E0028",
           value: "-",
           bg_light: "#FCCEDB",
           bg_dark:"#3A1E19"
-        }/*,
-        removedLine: {
-            className: "removed-line",
-            color: "#8E0028",
-            value: ""
-        },
-        removedChars: "removed-chars"*/
+        }
     };
 
     View.prototype.initialize = function() {
         this.setText(this.text);
-        //this.setDocument(this.file);
     };
 
     View.prototype.load = function() {

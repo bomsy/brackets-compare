@@ -94,6 +94,10 @@ define(function (require, exports, module) {
           CommandManager.get(CMD_HIDEVIEW).setEnabled(false);
           panel.destroy();
       }
+    
+      function _onShowCompareViewsWithHisory() {
+      
+      }
 
       // Creates the panels, views and runs the workers
       function _onShowCompareViews() {
@@ -218,7 +222,7 @@ define(function (require, exports, module) {
 
       // Command register
       CommandManager.register(Strings.COMPARE_FILE, CMD_COMPARE_FILE, _onShowCompareViews);
-      CommandManager.register(Strings.COMPARE_HISTORY, CMD_COMPARE_HISTORY, _onShowCompareViews);
+      CommandManager.register(Strings.COMPARE_HISTORY, CMD_COMPARE_HISTORY, _onShowCompareViewsWithHisory);
       CommandManager.register(Strings.COMPARE_VERTICAL, CMD_LAYOUT_VERTICAL, _onVerticalLayoutChange);
       CommandManager.register(Strings.COMPARE_HORIZONTAL, CMD_LAYOUT_HORIZONTAL, _onHorizontalLayoutChange);
       CommandManager.register(Strings.TOGGLE_STICKY, CMD_TOGGLE_STICKY, _onStickViews);

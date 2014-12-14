@@ -26,6 +26,18 @@
     height: 100% !important;
 }
 
+.compare-status-bar {
+  z-index: 10;
+	width: 100%;
+	float: left;
+	height: 20px;
+	padding: 2px 2px 0 5px;
+	bottom: 0px;
+	position: absolute;
+	background: #fff;
+	border-top: 1px solid rgba(0, 0, 0, 0.09);
+}
+
 #new-viewer-editor-horizontal .CodeMirror-wrap {
     border-top: 1px solid #888;
 }
@@ -103,7 +115,6 @@
 .glyphicon-remove:before {
   content: "\e014";
 }
-
 
 .glyphicon-remove-sign:before {
   content: "\e083";
