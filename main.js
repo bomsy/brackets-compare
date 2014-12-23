@@ -131,9 +131,7 @@ define(function (require, exports, module) {
             onBlur: function() {
               panel.currentView = null;
             },
-            onFileSave: function() {
-              console.log(this.file);
-            }
+            onFileSave: function() {}
           });
 
           oldView.onScroll = Utils.trigger(function() {
@@ -178,9 +176,7 @@ define(function (require, exports, module) {
                 onBlur: function() {
                   panel.currentView = null;
                 },
-                onFileSave: function() {
-                  console.log(this.file);
-                }
+                onFileSave: function() {}
               });
 
               newView.onScroll = Utils.trigger(function() {

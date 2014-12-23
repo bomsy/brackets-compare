@@ -1,23 +1,7 @@
-brackets-compare
+brackets-compare v0.0.1
 =======================
 
-Compare two files in brackets with detailed information about differences.
-
-## UNDER DEVELOPMENT
-
-* Still under development
-* Need feedbacks
-
-### Todo
-
-* Setup tests
-* ~~Add markers (lines) to show location of previous content~~
-* ~~Word markers ???~~
-* ~~Live diff updates on content change~~
-* ~~Change gutter markers to + and -~~
-* ~~Vertical & Horzontal view layout options~~
-* Cleanup code
-* ~~Auto-scrolling views - Look at Code mirror viewportChange event~~
+Diff two files in brackets.
 
 ### Usage
 
