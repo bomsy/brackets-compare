@@ -142,11 +142,13 @@ function loadTheme(callback) {
     var force = true;
     if (this.currentView) {
       this.currentView.saveFile();
+      this.writeStatus('File saved.')
     } else {
       // save all the view files
       for (var i = 0, len = this.views.length; i < len; i++) {
         this.views[i].saveFile(); 
       }
+      this.writeStatus('Files saved.')
     }
   };
 
@@ -211,6 +213,7 @@ function loadTheme(callback) {
 
   Panel.prototype.renderViews = function() {
     var content = "<div id='compare-panel' class='compare-panel' >";
+    var status
     for (var i = 0, len = this.views.length; i < len; i++) {
       content += this.views[i].render(this.layout); 
     }
@@ -220,6 +223,11 @@ function loadTheme(callback) {
     this.parent = this.$el.parent();
     this.statusbar = $('#compare-status-bar');
     this.bindEvents();
+  };
+  
+  Panel.prototype.writeStatus = function(text) {
+    var ctxt = this.statusbar.html();
+    this.statusbar.html(ctxt + text);
   };
 
   Panel.prototype.remove = function() {

@@ -132,7 +132,7 @@ define(function (require, exports, module) {
               panel.currentView = null;
             },
             onFileSave: function() {
-              console.log(this.id + " file saved.");
+              console.log(this.file);
             }
           });
 
@@ -179,7 +179,7 @@ define(function (require, exports, module) {
                   panel.currentView = null;
                 },
                 onFileSave: function() {
-                  console.log(this.id + " file saved.");
+                  console.log(this.file);
                 }
               });
 
