@@ -1,4 +1,4 @@
-brackets-compare v0.0.1
+brackets-compare v0.0.1 (NOT COMPATIBLE WITHT THE NEW VERSIONS OF BRACKETS WORKING ON A REWRITE!!!)
 =======================
 
 Diff two files in brackets.
