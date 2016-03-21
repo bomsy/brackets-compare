@@ -1,0 +1,6 @@
+{
+  "paths": {
+    "babel-polyfill": "./node_modules/babel-core/browser-polyfill",
+    "bluebird": "./node_modules/bluebird/js/browser/bluebird.min"
+  }
+}

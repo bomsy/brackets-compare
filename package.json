@@ -1,17 +1,46 @@
 {
-    "name": "brackets-compare",
-    "title": "Brackets Compare",
-    "description": "A diff tool for brackets",
-    "version": "0.0.1",
-    "homepage": "https://github.com/bomsy/brackets-compare",
-    "author": "Hubert Boma Manilla (http://www.bomsy.org)",
-    "licence": "MIT",
-    "engines": {
-        "brackets": ">=0.38.0"
-    },
-    "keywords": [
-        "diff",
-        "compare",
-        "brackets"
-    ]
+  "name": "brackets-compare",
+  "version": "0.1.0",
+  "description": "A diff tool for brackets",
+  "keywords": [
+    "brackets-extension",
+    "diff",
+    "compare"
+  ],
+  "homepage": "https://github.com/bomsy/brackets-compare",
+  "bugs": "https://github.com/bomsy/brackets-compare/issues",
+  "license": "MIT",
+  "author": {
+    "name": "Hubert B Manilla",
+    "email": "b4bomsy@gmail.com",
+    "url": "https://blog.bomsy.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bomsy/brackets-compare.git"
+  },
+  "scripts": {
+    "test": "gulp test",
+    "install": "gulp build"
+  },
+  "dependencies": {
+    "bluebird": "^2.9.13",
+    "babel-core": "^4.6.6",
+    "eslint": "^0.17.1",
+    "gulp": "^3.8.11",
+    "gulp-babel": "^4.0.0",
+    "gulp-eslint": "^0.7.0",
+    "gulp-sourcemaps": "^1.5.0",
+    "gulp-util": "^3.0.4",
+    "through2": "^0.6.3"
+  },
+  "engines": {
+    "brackets": ">=1.2.0"
+  },
+  "devDependencies": {
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-util": "^3.0.7",
+    "through2": "^0.6.5"
+  }
 }
