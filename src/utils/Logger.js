@@ -6,7 +6,6 @@ define(function (require, exports, module) {
   const packageInfo = JSON.parse(require('text!../../package.json'));
 
   const Logger = class {
-
     constructor() {
       this.prefix = `[${packageInfo.name}] `;
     }
