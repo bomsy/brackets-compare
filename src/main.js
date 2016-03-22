@@ -68,7 +68,7 @@ define(function (require, exports, module) {
       let target = document.querySelector('#compare-pane .pane-content');
       let editor = $('#editor-holder');
       editorCurrentHeight = $('#editor-holder').height();
-      
+      console.log(documents);
       if  (documents.length === 2) {
         switchCompareMode( mode => {
           changeButtonState(e.target || e.currentTarget, mode);
