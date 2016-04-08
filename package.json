@@ -24,11 +24,12 @@
     "install": "gulp build"
   },
   "dependencies": {
-    "bluebird": "^2.9.13",
     "babel-core": "^4.6.6",
+    "bluebird": "^2.9.13",
     "eslint": "^0.17.1",
     "gulp": "^3.8.11",
     "gulp-babel": "^4.0.0",
+    "gulp-concat": "^2.6.0",
     "gulp-eslint": "^0.7.0",
     "gulp-sourcemaps": "^1.5.0",
     "gulp-util": "^3.0.4",
