@@ -28,6 +28,7 @@
     "bluebird": "^2.9.13",
     "eslint": "^0.17.1",
     "gulp": "^3.8.11",
+    "gulp-amd-optimizer": "^0.4.0",
     "gulp-babel": "^4.0.0",
     "gulp-concat": "^2.6.0",
     "gulp-eslint": "^0.7.0",
