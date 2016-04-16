@@ -12,10 +12,40 @@
 }
 
 #compare-pane {
-  //height: 100%;
   .pane-content {
     height: 100%;
   }
+  
+  .pane-header {
+    z-index: 10;
+    position: absolute;
+    width: 100%;
+    border-bottom: 1px  solid #ccc;
+    background: #fff;
+    min-height: 30px;
+    .pane-header-content {
+      position: absolute;
+      margin: 7px 10px 5px 10px;
+      color: #999;
+      .perm {
+        color: indianred;
+        font-weight: bold;
+      }
+      .file-name {
+        font-weight: bold;
+        color: #777;
+      }
+    }
+    
+    .pane-left {
+      left: 0;
+    }
+    .pane-right {
+      right: 0;
+    }
+  }
+  
+  
 }
 
 .glyphicon {

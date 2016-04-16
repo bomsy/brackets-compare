@@ -1,8 +1,9 @@
 /*eslint no-console: 0*/
-define(function (require, exports, module) {
-  'use strict';
+define(function(require, exports, module) {
+  //'use strict';
+  
   module.exports = {
-    injectScript: (id, path) => {
+    injectScript: function(id, path) {
       var __script = document.createElement('script');
       var __tags = document.getElementsByTagName('script');
       var __tag = __tags[__tags.length - 1];
@@ -14,7 +15,7 @@ define(function (require, exports, module) {
       __tag.parentNode.insertBefore(__script, __tag);
     },
 
-    getCodeMirrorMode: (ext = 'js') => {
+    getCodeMirrorMode: function(ext = 'js') {
       var modes = {
         'js': 'javascript',
         'css': 'text/css',
@@ -24,8 +25,19 @@ define(function (require, exports, module) {
       return modes[ext];
     },
 
-    getPathExtension: function (path) {
+    getPathExtension: function(path) {
       return path;
+    },
+    
+    debounce: function(fn, delay) {
+      var timer = null;
+      return function() {
+        var context = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          fn.apply(context, args);
+        }, delay);
+      };
     }
   };
 });

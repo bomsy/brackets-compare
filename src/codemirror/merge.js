@@ -2,10 +2,12 @@
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
 // declare global: diff_match_patch, DIFF_INSERT, DIFF_DELETE, DIFF_EQUAL
-define(function (require, exports, module) {
+define((require, exports, module) => {
   "use strict";
   
   var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
+  let ExtensionUtils = brackets.getModule('utils/ExtensionUtils');
+  let FileUtils = brackets.getModule('file/FileUtils');
   
   var Pos = CodeMirror.Pos;
   var svgNS = "http://www.w3.org/2000/svg";
@@ -33,7 +35,10 @@ define(function (require, exports, module) {
     init: function(pane, orig, options) {
       this.edit = this.mv.edit;
       (this.edit.state.diffViews || (this.edit.state.diffViews = [])).push(this);
-      this.orig = CodeMirror(pane, copyObj({value: orig, readOnly: !this.mv.options.allowEditingOriginals}, copyObj(options)));
+      this.orig = CodeMirror(pane, copyObj({
+        value: orig,
+        readOnly: !this.mv.options.allowEditingOriginals
+      }, copyObj(options)));
       this.orig.state.diffViews = [this];
 
       this.diff = getDiff(asString(orig), asString(options.value));
@@ -108,6 +113,7 @@ define(function (require, exports, module) {
       // Update faster when a line was added/removed
       setDealign(change.text.length - 1 != change.to.line - change.from.line);
     }
+    
     dv.edit.on("change", change);
     dv.orig.on("change", change);
     dv.edit.on("markerAdded", setDealign);

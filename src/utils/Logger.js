@@ -1,6 +1,6 @@
 /*eslint no-console: 0*/
 
-define(function (require, exports, module) {
+define((require, exports, module) => {
   'use strict';
 
   const packageInfo = JSON.parse(require('text!../../package.json'));
