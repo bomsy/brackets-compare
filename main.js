@@ -1,6 +1,6 @@
 /*eslint no-var:0*/
 
-define(function (require, exports, module) {
+define(function(require, exports, module) {
   'use strict';
 
   // styling
@@ -11,10 +11,10 @@ define(function (require, exports, module) {
   
   // launch compiled js code
   if (!window.regeneratorRuntime) { 
-    require('babel-polyfill'); 
+    require('babel-polyfill');
+    require('dist/main');
   }
   
-  require('dist/main');
   require([ExtensionUtils.getModulePath(module, 'dist/diff_match_patch/main.js')]);
   require([ExtensionUtils.getModulePath(module, 'dist/codemirror/merge.js')]);
   
