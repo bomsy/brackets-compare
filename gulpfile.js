@@ -10,6 +10,8 @@ var eslint = require('gulp-eslint');
 var through = require('through2');
 var sourcemaps = require('gulp-sourcemaps');
 var babel = require('gulp-babel');
+var concat = require('gulp-concat');
+var amdOptimize = require('gulp-amd-optimizer');
 var del = require('del');
 
 var MAIN_FILES = './*.js';
@@ -37,17 +39,19 @@ function logPipe(str) {
 }
 
 // helper for transpiling es6 files to es5
-function doBabel(globs, singleFile) {
+function doBabel(globs, singleFile, dir, output) {
+  var amdConfig = {
+    baseUrl: path.resolve(__dirname, 'src')
+  };
+  var amdConfig
   if (singleFile) {
     gutil.log(gutil.colors.cyan('Start Babel ' + globs[0]));
   }
 
-  var task = gulp.src(globs, {base: path.resolve(__dirname, 'src')})
+  var task = gulp.src(globs, { base: path.resolve(__dirname, 'src') })
     .pipe(sourcemaps.init())
     .pipe(babel(babelOptions))
-    .pipe(sourcemaps.write('.', {
-      sourceMappingURLPrefix: path.resolve(__dirname, 'dist') + '/'
-    }))
+    .pipe(sourcemaps.write())
     .pipe(gulp.dest(DIST_DIR));
 
   return singleFile ?
@@ -86,7 +90,7 @@ gulp.task('watch', function () {
   gulp.watch([SRC_FILES]).on('change', function (event) {
     var filePath = path.relative(__dirname, event.path);
     if (fs.statSync(filePath).isFile()) {
-      doEslint([filePath], true);
+      //doEslint([filePath], true);
       doBabel([filePath], true);
     }
   });
