@@ -9,16 +9,16 @@ define(function (require, exports, module) {
   let DocumentManager = brackets.getModule("document/DocumentManager");
   let ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
   let ThemeManager = brackets.getModule("view/ThemeManager");
-  let Dialogs = brackets.getModule("widgets/Dialogs");
-  let ModalBar = brackets.getModule("widgets/ModalBar").ModalBar;
 
   let CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
 
   let Logger = require("dist/logger");
+  let Notifier = require('dist/notifier');
 
   let compareMode = false;
   let hdiff = 0;
   let editorCurrentHeight = 0;
+  let notifier = new Notifier();
   
   const modes = {
     'js': 'javascript',
@@ -86,9 +86,8 @@ define(function (require, exports, module) {
 
       // Both panes should be selected
       if (panes.length < 2) {
-        //Dialogs.showModalDialog("test", "Error", "Multiple view selections needed.");
-        let modalbar = new ModalBar("<span>Select multiple views</span>", true);
-        Logger.warn('Select multiple views');
+        notifier.error('Cannot compare only one view / file selected. To select two files to compare, use the split views.');
+        Logger.error('Cannot compare only one view / file selected. To select two files to compare, use the split views.');
         return;
       }
       
@@ -96,14 +95,14 @@ define(function (require, exports, module) {
       let oFile = MainViewManager.getCurrentlyViewedFile(panes[1]);
       
       if (mFile === null || oFile === null) {
-        Dialogs.showModalDialog("test", "Error", "File not selected.");
-        Logger.warn('File not selected.');
+        notifier.error('No file selected for one or all of the views. Please select a file / files.');
+        Logger.error('No file selected for one or all of the views. Please select a file / files.');
         return; 
       }
       
       if (getExtension(mFile._name) !== getExtension(oFile._name)) {
-        Dialogs.showModalDialog("test", "Error", "Cannot compare files of different types.");
-        Logger.warn('Cannot compare files of different types.');
+        notifier.error('Cannot compare files of different types. Please select files of the same type.');
+        Logger.error('Cannot compare files of different types. Please select files of the same type.');
         return;
       }
       
