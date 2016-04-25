@@ -1,22 +1,36 @@
 define(function (require, exports, module) {
   "use strict";
 
-  var AppInit = brackets.getModule("utils/AppInit");
-  var WorkspaceManager = brackets.getModule("view/WorkspaceManager");
-  var EditorManager = brackets.getModule("editor/EditorManager");
-  var MainViewManager = brackets.getModule("view/MainViewManager");
-  var Sidebar = brackets.getModule("project/SidebarView");
-  var DocumentManager = brackets.getModule("document/DocumentManager");
-  var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-  var ThemeManager = brackets.getModule("view/ThemeManager");
+  let AppInit = brackets.getModule("utils/AppInit");
+  let WorkspaceManager = brackets.getModule("view/WorkspaceManager");
+  let EditorManager = brackets.getModule("editor/EditorManager");
+  let MainViewManager = brackets.getModule("view/MainViewManager");
+  let Sidebar = brackets.getModule("project/SidebarView");
+  let DocumentManager = brackets.getModule("document/DocumentManager");
+  let ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
+  let ThemeManager = brackets.getModule("view/ThemeManager");
+  let Dialogs = brackets.getModule("widgets/Dialogs");
+  let ModalBar = brackets.getModule("widgets/ModalBar").ModalBar;
 
-  var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
+  let CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
 
-  var Utils = require("dist/utils/Utils");
+  let Logger = require("dist/logger");
 
-  var compareMode = false;
-  var hdiff = 0;
-  var editorCurrentHeight = 0;
+  let compareMode = false;
+  let hdiff = 0;
+  let editorCurrentHeight = 0;
+  
+  const modes = {
+    'js': 'javascript',
+    'css': 'text/css',
+    'less': 'text/css',
+    'sass': 'text/css',
+    'coffee': 'javascript',
+    'jsx': 'javascript',
+    'json': 'javascript',
+    //'html': 'text/html',
+    'html': 'htmlmixed'
+  };
 
   function addToolbarButton(id, handler) {
     var html = "<a href=\"#\" title=\"Show diffs\" id=\"" + id + "\"> <i class=\"glyphicon glyphicon-duplicate\"></i></a>";
@@ -47,7 +61,13 @@ define(function (require, exports, module) {
     var cdiff = $("#compare-pane").parent().height() - hdiff;
     $("#compare-pane").css("height", cdiff + "px");
   }
-
+  
+  function getExtension(filename) {
+    var regExp = /\.(\w+)$/;
+    return String(filename).match(regExp)[1];
+  }
+  
+  
   AppInit.appReady(function () {
     var COMPARE_PANEL_HTML = "<div id=\"compare-pane\">" + "<div class=\"pane-header\">" + "<div id=\"pane-left\" class=\"pane-header-content pane-left\"></div>" + "<div id=\"pane-right\" class=\"pane-header-content pane-right\" ></div>" + "</div>" + "<div class=\"pane-content\"></div>" + "</div>";
     var comparePanel = null;
@@ -59,51 +79,75 @@ define(function (require, exports, module) {
 
     addToolbarButton("compare-files", function (e) {
       // make sure there are aleast two panes to compare
-      var documents = DocumentManager.getAllOpenDocuments();
-      var target = document.querySelector("#compare-pane .pane-content");
-      var editor = $("#editor-holder");
+      let panes = MainViewManager.getPaneIdList();
+      let target = document.querySelector("#compare-pane .pane-content");
+      let editor = $("#editor-holder");
       editorCurrentHeight = $("#editor-holder").height();
-      console.log(documents);
-      if (documents.length === 2) {
-        switchCompareMode(function (mode) {
-          changeButtonState(e.target || e.currentTarget, mode);
 
-          if (mode) {
-            comparePanel.show();
-            compareView = CodeMirror.MergeView(target, {
-              value: documents[0].getText(),
-              orig: documents[1].getText(),
-              hightlightDifferences: false,
-              collapseIdentical: false,
-              options: {
-                allowEditingOriginals: true },
-              lineNumbers: true,
-              theme: currentTheme.name,
-              mode: Utils.getCodeMirrorMode()
-            });
-
-            WorkspaceManager.on(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
-            editor.addClass("hide");
-            Sidebar.hide();
-
-            $("#pane-left").html(documents[0].file._path);
-            $("#pane-right").html("<span class=\"perm\">read-only</span> " + documents[1].file._path);
-
-            var compareEditor = $("#compare-pane");
-            // Calculate the height diff
-
-            compareEditor.css("height", editorCurrentHeight + "px");
-            hdiff = compareEditor.parent().height() - editorCurrentHeight;
-          } else {
-            comparePanel.hide();
-            target.innerHTML = "";
-            compareView = null;
-            editor.removeClass("hide");
-            WorkspaceManager.off(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
-            Sidebar.show();
-          }
-        });
+      // Both panes should be selected
+      if (panes.length < 2) {
+        //Dialogs.showModalDialog("test", "Error", "Multiple view selections needed.");
+        let modalbar = new ModalBar("<span>Select multiple views</span>", true);
+        Logger.warn('Select multiple views');
+        return;
       }
+      
+      let mFile = MainViewManager.getCurrentlyViewedFile(panes[0]);
+      let oFile = MainViewManager.getCurrentlyViewedFile(panes[1]);
+      
+      if (mFile === null || oFile === null) {
+        Dialogs.showModalDialog("test", "Error", "File not selected.");
+        Logger.warn('File not selected.');
+        return; 
+      }
+      
+      if (getExtension(mFile._name) !== getExtension(oFile._name)) {
+        Dialogs.showModalDialog("test", "Error", "Cannot compare files of different types.");
+        Logger.warn('Cannot compare files of different types.');
+        return;
+      }
+      
+      let fileExt = getExtension(mFile._name);
+
+      switchCompareMode(function (cmode) {
+        changeButtonState(e.target || e.currentTarget, cmode);
+
+        if (cmode) {
+          comparePanel.show();
+          compareView = CodeMirror.MergeView(target, {
+            value: mFile._contents,
+            orig: oFile._contents,
+            hightlightDifferences: false,
+            collapseIdentical: false,
+            options: {
+              allowEditingOriginals: true 
+            },
+            lineNumbers: true,
+            theme: currentTheme.name,
+            mode: modes[fileExt]
+          });
+
+          WorkspaceManager.on(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
+          editor.addClass("hide");
+          Sidebar.hide();
+
+          $("#pane-left").html(mFile._parentPath + '<span class=\"file-name\">' + mFile._name + '</span>');
+          $("#pane-right").html("<span class=\"perm\">[read-only]</span> " + oFile._parentPath + '<span class=\"file-name\">' + oFile._name + '</span>');
+
+          var compareEditor = $("#compare-pane");
+          // Calculate the height diff
+
+          compareEditor.css("height", editorCurrentHeight + "px");
+          hdiff = compareEditor.parent().height() - editorCurrentHeight;
+        } else {
+          comparePanel.hide();
+          target.innerHTML = "";
+          compareView = null;
+          editor.removeClass("hide");
+          WorkspaceManager.off(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
+          Sidebar.show();
+        }
+      });
     });
 
     // Create a new panel to hold the diff views

@@ -3,7 +3,7 @@
 define((require, exports, module) => {
   'use strict';
 
-  const packageInfo = JSON.parse(require('text!../../package.json'));
+  const packageInfo = JSON.parse(require('text!../package.json'));
 
   const Logger = class {
     constructor() {
@@ -16,6 +16,10 @@ define((require, exports, module) => {
 
     error(...args) {
       console.error(this.prefix + args.join(' '));
+    }
+    
+    warn(...args) {
+      console.warn(this.prefix + args.join(' '));
     }
 
   };

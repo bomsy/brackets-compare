@@ -15,8 +15,8 @@ define(function(require, exports, module) {
     require('dist/main');
   }
   
-  require([ExtensionUtils.getModulePath(module, 'dist/diff_match_patch/main.js')]);
-  require([ExtensionUtils.getModulePath(module, 'dist/codemirror/merge.js')]);
+  require([ExtensionUtils.getModulePath(module, 'dist/diff_match_patch.js')]);
+  require([ExtensionUtils.getModulePath(module, 'dist/cm_merge.js')]);
   
 
   /*
