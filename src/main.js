@@ -100,6 +100,12 @@ define(function (require, exports, module) {
         return; 
       }
       
+      if (mFile._contents === null || oFile._contents === null) {
+        notifier.error('To compare files, please open the folder containing these files in Brackets using the pane on the left.');
+        Logger.error('To compare files, please open the folder containing these files in Brackets using the pane on the left.');
+        return; 
+      }
+      
       if (getExtension(mFile._name) !== getExtension(oFile._name)) {
         notifier.error('Cannot compare files of different types. Please select files of the same type.');
         Logger.error('Cannot compare files of different types. Please select files of the same type.');
