@@ -2,13 +2,8 @@
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
 // declare global: diff_match_patch, DIFF_INSERT, DIFF_DELETE, DIFF_EQUAL
-define((require, exports, module) => {
+(function() {
   "use strict";
-  
-  var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
-  let ExtensionUtils = brackets.getModule('utils/ExtensionUtils');
-  let FileUtils = brackets.getModule('file/FileUtils');
-  
   var Pos = CodeMirror.Pos;
   var svgNS = "http://www.w3.org/2000/svg";
 
@@ -771,4 +766,5 @@ define((require, exports, module) => {
   CodeMirror.commands.goPrevDiff = function(cm) {
     return goNearbyDiff(cm, -1);
   };
-});
+  console.log('-------> merge loaded')
+})();
