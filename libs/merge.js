@@ -766,5 +766,4 @@
   CodeMirror.commands.goPrevDiff = function(cm) {
     return goNearbyDiff(cm, -1);
   };
-  console.log('-------> merge loaded')
 })();
