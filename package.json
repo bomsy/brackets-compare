@@ -1,6 +1,6 @@
 {
   "name": "brackets-compare",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A diff tool for brackets",
   "keywords": [
     "brackets-extension",
