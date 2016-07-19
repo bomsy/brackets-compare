@@ -15,8 +15,10 @@ define(function (require, exports, module) {
 
   var CodeMirror = brackets.getModule("thirdparty/CodeMirror2/lib/codemirror");
   
-  require([ExtensionUtils.getModulePath(module, 'libs/diff_match_patch.js'), 
-           ExtensionUtils.getModulePath(module, 'libs/merge.js')], function() {});
+  require([ExtensionUtils.getModulePath(module, 'libs/diff_match_patch.js')], function() {
+    // Load merge.js after diff_match_patch.js has loaded
+    require([ExtensionUtils.getModulePath(module, 'libs/merge.js')], function() {})
+  });
 
   var Logger = require("libs/logger");
   var Notifier = require('libs/notifier');
