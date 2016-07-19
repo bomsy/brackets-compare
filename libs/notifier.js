@@ -25,12 +25,14 @@ define(function(require, exports, module) {
   };
     
   Notifier.prototype.open = function() {
+    var self = this;
     if (this.modalbar !== null) {
       this.close();
     }
+    
     this.modalbar = new ModalBar("<span class='error-notify'><i class=\"glyphicon glyphicon-" + types[this.type] + "\"></i> " + this.message + "</span>", true);
     this.timeoutId = window.setTimeout(function() { 
-      this.close(); 
+      self.close(); 
     }, this.timeout);
   };
     
