@@ -153,11 +153,15 @@ define(function (require, exports, module) {
           compareEditor.css("height", editorCurrentHeight + "px");
           hdiff = compareEditor.parent().height() - editorCurrentHeight;
         } else {
+          MainViewManager.setActivePaneId(panes[0]);
+          var document = DocumentManager.getCurrentDocument();
+          document.setText(compareView.editor().getValue()); 
+          
           comparePanel.hide();
           target.innerHTML = "";
           compareView = null;
-          editor.removeClass("hide");
-          WorkspaceManager.off(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
+          editor.removeClass("hide");    
+        WorkspaceManager.off(WorkspaceManager.EVENT_WORKSPACE_UPDATE_LAYOUT, onWorkspaceLayoutUpdate);
           Sidebar.show();
         }
       });
